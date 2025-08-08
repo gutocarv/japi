@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_87aac2dcc4531e47630366edbb391f47 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+        <div style="position: fixed; 
+                    top: 10px; right: 10px; width: 320px; max-height: 80vh; 
+                    background-color: rgba(255,255,255,0.95); border:2px solid #333; 
+                    z-index:9999; font-size:11px; padding: 15px; border-radius: 8px;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.3); overflow-y: auto;">
+
+        <h3 style="margin:0 0 15px 0; color:#333; text-align:center; border-bottom:2px solid #ddd; padding-bottom:8px;">
+        📊 INFORMAÇÕES DETALHADAS
+        </h3>
+
+        <h4 style="margin:10px 0 8px 0; color:#0066cc;">
+        📍 PONTOS DE OBSERVAÇÃO (3)
+        </h4>
+        
+            <div style="margin-bottom:8px; padding:5px; background-color:#f0f8ff; border-radius:3px;">
+                <b>📍 neco</b><br>
+                <small>
+                • Lat: -23.280000<br>
+                • Lon: -46.900000<br>
+                • Az: 180.0° → Alvo_1
+                
+                </small>
+            </div>
+            
+            <div style="margin-bottom:8px; padding:5px; background-color:#f0f8ff; border-radius:3px;">
+                <b>📍 guto</b><br>
+                <small>
+                • Lat: -23.280000<br>
+                • Lon: -46.880000<br>
+                • Az: 190.0° → Alvo_2
+                
+                </small>
+            </div>
+            
+            <div style="margin-bottom:8px; padding:5px; background-color:#f0f8ff; border-radius:3px;">
+                <b>📍 samaria</b><br>
+                <small>
+                • Lat: -23.280000<br>
+                • Lon: -46.920000<br>
+                • Az: 165.0° → Alvo_3
+                
+                </small>
+            </div>
+            
+
+        <h4 style='margin:15px 0 8px 0; color:#cc3300;'>🎯 INTERSECÇÕES (3)</h4>
+            <div style="margin-bottom:8px; padding:5px; background-color:#fff0e6; border-radius:3px;">
+                <b>🎯 Inter_Alvo_1_Alvo_2</b><br>
+                <small>
+                • Lat: -23.384191<br>
+                • Lon: -46.900000<br>
+                • Entre: neco & guto
+                
+                </small>
+            </div>
+            
+            <div style="margin-bottom:8px; padding:5px; background-color:#fff0e6; border-radius:3px;">
+                <b>🎯 Inter_Alvo_1_Alvo_3</b><br>
+                <small>
+                • Lat: -23.348564<br>
+                • Lon: -46.900000<br>
+                • Entre: neco & samaria
+                
+                </small>
+            </div>
+            
+            <div style="margin-bottom:8px; padding:5px; background-color:#fff0e6; border-radius:3px;">
+                <b>🎯 Inter_Alvo_2_Alvo_3</b><br>
+                <small>
+                • Lat: -23.362704<br>
+                • Lon: -46.895875<br>
+                • Entre: guto & samaria
+                
+                </small>
+            </div>
+            
+
+        <hr style="margin:15px 0 10px 0;">
+        <div style="text-align:center; color:#666; font-size:10px;">
+        <b>Sistema de Triangulação v2.0</b><br>
+        Gerado em: 08/08/2025 às 09:28:26
+        </div>
+        </div>
+        
+    
+        <div style="position: fixed; 
+                    bottom: 10px; left: 10px; width: 280px; height: auto; 
+                    background-color: rgba(255,255,255,0.9); border:2px solid #333; 
+                    z-index:9999; font-size:12px; padding: 10px; border-radius: 5px;
+                    box-shadow: 0 0 15px rgba(0,0,0,0.2);">
+        <h4 style="margin:0 0 10px 0; color:#333;">📍 LEGENDA CORRIGIDA</h4>
+        <p style="margin:2px 0;"><i class="fa fa-camera" style="color:blue; margin-right:5px;"></i> <b>Pontos de Observação</b></p>
+        <p style="margin:2px 0;"><i class="fa fa-map-marker" style="color:red; margin-right:5px;"></i> <b>Intersecções Calculadas</b></p>
+        <p style="margin:2px 0;"><span style="color:#666;">━ ━ ━</span> <b>Azimutes Verdadeiros</b></p>
+        <p style="margin:2px 0;"><span style="color:#000;">··········</span> <b>Linhas de Triangulação</b></p>
+        <hr style="margin:8px 0;">
+        <p style="margin:2px 0; font-size:10px; color:#666;">
+        <b>AZIMUTES CORRETOS:</b><br>
+        • 0° = Norte ↑<br>
+        • 90° = Leste →<br>
+        • 180° = Sul ↓<br>
+        • 270° = Oeste ←
+        </p>
+        <p style="margin:2px 0; font-size:11px; color:#666;">
+        Clique nos pontos para detalhes
+        </p>
+        </div>
+        
+    
+            <div class="folium-map" id="map_87aac2dcc4531e47630366edbb391f47" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_87aac2dcc4531e47630366edbb391f47 = L.map(
+                "map_87aac2dcc4531e47630366edbb391f47",
+                {
+                    center: [-23.322576500143892, -46.899312573145096],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 14,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_d1b57304bd70d8b1de8ae502b33e478a = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_d1b57304bd70d8b1de8ae502b33e478a.addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var marker_20b17552a5d8ca89b40e12b21d3bf4ad = L.marker(
+                [-23.28, -46.9],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_d341b3904a9f70f4e66b7224bc7aed70 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_d87fd94407e3c054d9e98519a90e966a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_26578d07edc1d21529088dbb6f1db3a8 = $(`<div id="html_26578d07edc1d21529088dbb6f1db3a8" style="width: 100.0%; height: 100.0%;">             <div style="width:250px">             <b>📍 neco</b><br>             <b>Tipo:</b> Ponto de Observação<br>             <b>Coordenadas:</b><br>             • Lat: -23.280000<br>             • Lon: -46.900000<br>             <b>Azimute:</b> 180.0°<br>             <b>Alvo:</b> Alvo_1<br>                          <b>Criado:</b> 2025-08-08 09:25:42             </div>             </div>`)[0];
+                popup_d87fd94407e3c054d9e98519a90e966a.setContent(html_26578d07edc1d21529088dbb6f1db3a8);
+            
+        
+
+        marker_20b17552a5d8ca89b40e12b21d3bf4ad.bindPopup(popup_d87fd94407e3c054d9e98519a90e966a)
+        ;
+
+        
+    
+    
+            marker_20b17552a5d8ca89b40e12b21d3bf4ad.bindTooltip(
+                `<div>
+                     📍 neco → Alvo_1
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_20b17552a5d8ca89b40e12b21d3bf4ad.setIcon(icon_d341b3904a9f70f4e66b7224bc7aed70);
+            
+    
+            var marker_9234acf15063e51aebbeef3dbf6534fd = L.marker(
+                [-23.28, -46.88],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_6402d7538592a933923d4fe28d2df84b = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_66f0f8e9fe67ed82c56b4bea7cd94f6a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_b070af140e4773b365789d993b9b1e50 = $(`<div id="html_b070af140e4773b365789d993b9b1e50" style="width: 100.0%; height: 100.0%;">             <div style="width:250px">             <b>📍 guto</b><br>             <b>Tipo:</b> Ponto de Observação<br>             <b>Coordenadas:</b><br>             • Lat: -23.280000<br>             • Lon: -46.880000<br>             <b>Azimute:</b> 190.0°<br>             <b>Alvo:</b> Alvo_2<br>                          <b>Criado:</b> 2025-08-08 09:26:44             </div>             </div>`)[0];
+                popup_66f0f8e9fe67ed82c56b4bea7cd94f6a.setContent(html_b070af140e4773b365789d993b9b1e50);
+            
+        
+
+        marker_9234acf15063e51aebbeef3dbf6534fd.bindPopup(popup_66f0f8e9fe67ed82c56b4bea7cd94f6a)
+        ;
+
+        
+    
+    
+            marker_9234acf15063e51aebbeef3dbf6534fd.bindTooltip(
+                `<div>
+                     📍 guto → Alvo_2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_9234acf15063e51aebbeef3dbf6534fd.setIcon(icon_6402d7538592a933923d4fe28d2df84b);
+            
+    
+            var marker_5d2223069f998dfd01e011239483d8f2 = L.marker(
+                [-23.28, -46.92],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_e5c932f0b55f6e817d20527af52ca99b = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_5ca0338ba361d6266d42549e0b0e9664 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_ddcbbc9e8ffbf0945c166bda4da07f40 = $(`<div id="html_ddcbbc9e8ffbf0945c166bda4da07f40" style="width: 100.0%; height: 100.0%;">             <div style="width:250px">             <b>📍 samaria</b><br>             <b>Tipo:</b> Ponto de Observação<br>             <b>Coordenadas:</b><br>             • Lat: -23.280000<br>             • Lon: -46.920000<br>             <b>Azimute:</b> 165.0°<br>             <b>Alvo:</b> Alvo_3<br>                          <b>Criado:</b> 2025-08-08 09:28:11             </div>             </div>`)[0];
+                popup_5ca0338ba361d6266d42549e0b0e9664.setContent(html_ddcbbc9e8ffbf0945c166bda4da07f40);
+            
+        
+
+        marker_5d2223069f998dfd01e011239483d8f2.bindPopup(popup_5ca0338ba361d6266d42549e0b0e9664)
+        ;
+
+        
+    
+    
+            marker_5d2223069f998dfd01e011239483d8f2.bindTooltip(
+                `<div>
+                     📍 samaria → Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_5d2223069f998dfd01e011239483d8f2.setIcon(icon_e5c932f0b55f6e817d20527af52ca99b);
+            
+    
+            var poly_line_3bbc97f1e7a783ce8f4f128db3bf33e1 = L.polyline(
+                [[-23.28, -46.9], [-23.369932160591876, -46.900000000000006]],
+                {"bubblingMouseEvents": true, "color": "red", "dashArray": "5, 5", "dashOffset": null, "fill": false, "fillColor": "red", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_3bbc97f1e7a783ce8f4f128db3bf33e1.bindTooltip(
+                `<div>
+                     🧭 neco: Azimute 180.0° → Alvo_1
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_b2188e71cebc994c9c741a3278aa8c58 = L.polyline(
+                [[-23.28, -46.88], [-23.368564971609914, -46.89701200378868]],
+                {"bubblingMouseEvents": true, "color": "green", "dashArray": "5, 5", "dashOffset": null, "fill": false, "fillColor": "green", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_b2188e71cebc994c9c741a3278aa8c58.bindTooltip(
+                `<div>
+                     🧭 guto: Azimute 190.0° → Alvo_2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_333f6470ad4a4aa7f09361fe55b04c71 = L.polyline(
+                [[-23.28, -46.92], [-23.3668657586026, -46.89464428193431]],
+                {"bubblingMouseEvents": true, "color": "purple", "dashArray": "5, 5", "dashOffset": null, "fill": false, "fillColor": "purple", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.7, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_333f6470ad4a4aa7f09361fe55b04c71.bindTooltip(
+                `<div>
+                     🧭 samaria: Azimute 165.0° → Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_b65ab334cd56c9fb865d1bdf10ebccf0 = L.polyline(
+                [[-23.28, -46.9], [-23.38419101978853, -46.9]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_b65ab334cd56c9fb865d1bdf10ebccf0.bindTooltip(
+                `<div>
+                     📐 Triangulação: neco → Inter_Alvo_1_Alvo_2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_064835694a1a0832c284896627b0bf28 = L.polyline(
+                [[-23.28, -46.88], [-23.38419101978853, -46.9]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_064835694a1a0832c284896627b0bf28.bindTooltip(
+                `<div>
+                     📐 Triangulação: guto → Inter_Alvo_1_Alvo_2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_4e999c909f02671467bb93641b3ee07f = L.polyline(
+                [[-23.28, -46.9], [-23.3485640727989, -46.9]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_4e999c909f02671467bb93641b3ee07f.bindTooltip(
+                `<div>
+                     📐 Triangulação: neco → Inter_Alvo_1_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_2e8ca2cc6719b69e586e6c0bdca29627 = L.polyline(
+                [[-23.28, -46.92], [-23.3485640727989, -46.9]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_2e8ca2cc6719b69e586e6c0bdca29627.bindTooltip(
+                `<div>
+                     📐 Triangulação: samaria → Inter_Alvo_1_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_adaf190a8a3bc92258e7799639c5ebb6 = L.polyline(
+                [[-23.28, -46.88], [-23.362703908275893, -46.8958754388706]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_adaf190a8a3bc92258e7799639c5ebb6.bindTooltip(
+                `<div>
+                     📐 Triangulação: guto → Inter_Alvo_2_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var poly_line_b3d63486e7bf9b2f435dce8daad3d00d = L.polyline(
+                [[-23.28, -46.92], [-23.362703908275893, -46.8958754388706]],
+                {"bubblingMouseEvents": true, "color": "black", "dashArray": "2, 10", "dashOffset": null, "fill": false, "fillColor": "black", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 0.5, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            poly_line_b3d63486e7bf9b2f435dce8daad3d00d.bindTooltip(
+                `<div>
+                     📐 Triangulação: samaria → Inter_Alvo_2_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_cbadb5988dd07ff10f5be3f2212db8c2 = L.marker(
+                [-23.38419101978853, -46.9],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_2a2839ab2264c3438381c3a0bbb37ce7 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "map-marker",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_ed05802127ec559efcd1ee86505b8962 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_ddb8cbb1cfe8852a6ef7197be22651e9 = $(`<div id="html_ddb8cbb1cfe8852a6ef7197be22651e9" style="width: 100.0%; height: 100.0%;">             <div style="width:280px">             <b>🎯 Inter_Alvo_1_Alvo_2</b><br>             <b>Tipo:</b> Intersecção Calculada<br>             <b>Coordenadas:</b><br>             • Lat: -23.384191<br>             • Lon: -46.900000<br>             <b>🎯 Alvos:</b> Alvo_1, Alvo_2<br>             <b>📍 Pontos Origem:</b><br>             • neco & guto                          </div>             </div>`)[0];
+                popup_ed05802127ec559efcd1ee86505b8962.setContent(html_ddb8cbb1cfe8852a6ef7197be22651e9);
+            
+        
+
+        marker_cbadb5988dd07ff10f5be3f2212db8c2.bindPopup(popup_ed05802127ec559efcd1ee86505b8962)
+        ;
+
+        
+    
+    
+            marker_cbadb5988dd07ff10f5be3f2212db8c2.bindTooltip(
+                `<div>
+                     🎯 Inter_Alvo_1_Alvo_2
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_cbadb5988dd07ff10f5be3f2212db8c2.setIcon(icon_2a2839ab2264c3438381c3a0bbb37ce7);
+            
+    
+            var marker_d0f654a0cfa81b4d99f38be83802ad19 = L.marker(
+                [-23.3485640727989, -46.9],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_909bafba0bef3c4f1243a57a41efb269 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "map-marker",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_a44f717c53a6d7bead2b5a5090df9f65 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_5660589995a73d640af085809eebe91f = $(`<div id="html_5660589995a73d640af085809eebe91f" style="width: 100.0%; height: 100.0%;">             <div style="width:280px">             <b>🎯 Inter_Alvo_1_Alvo_3</b><br>             <b>Tipo:</b> Intersecção Calculada<br>             <b>Coordenadas:</b><br>             • Lat: -23.348564<br>             • Lon: -46.900000<br>             <b>🎯 Alvos:</b> Alvo_1, Alvo_3<br>             <b>📍 Pontos Origem:</b><br>             • neco & samaria                          </div>             </div>`)[0];
+                popup_a44f717c53a6d7bead2b5a5090df9f65.setContent(html_5660589995a73d640af085809eebe91f);
+            
+        
+
+        marker_d0f654a0cfa81b4d99f38be83802ad19.bindPopup(popup_a44f717c53a6d7bead2b5a5090df9f65)
+        ;
+
+        
+    
+    
+            marker_d0f654a0cfa81b4d99f38be83802ad19.bindTooltip(
+                `<div>
+                     🎯 Inter_Alvo_1_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d0f654a0cfa81b4d99f38be83802ad19.setIcon(icon_909bafba0bef3c4f1243a57a41efb269);
+            
+    
+            var marker_426ba521e774ecda33d3b77ab8229dd1 = L.marker(
+                [-23.362703908275893, -46.8958754388706],
+                {
+}
+            ).addTo(map_87aac2dcc4531e47630366edbb391f47);
+        
+    
+            var icon_ba1a0fd21154fb0f96349980dd4d5699 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "map-marker",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_52326f9fbdc7afe99ecf518ed1d549eb = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_fc6972438dda32a673ad7ed40516fc8f = $(`<div id="html_fc6972438dda32a673ad7ed40516fc8f" style="width: 100.0%; height: 100.0%;">             <div style="width:280px">             <b>🎯 Inter_Alvo_2_Alvo_3</b><br>             <b>Tipo:</b> Intersecção Calculada<br>             <b>Coordenadas:</b><br>             • Lat: -23.362704<br>             • Lon: -46.895875<br>             <b>🎯 Alvos:</b> Alvo_2, Alvo_3<br>             <b>📍 Pontos Origem:</b><br>             • guto & samaria                          </div>             </div>`)[0];
+                popup_52326f9fbdc7afe99ecf518ed1d549eb.setContent(html_fc6972438dda32a673ad7ed40516fc8f);
+            
+        
+
+        marker_426ba521e774ecda33d3b77ab8229dd1.bindPopup(popup_52326f9fbdc7afe99ecf518ed1d549eb)
+        ;
+
+        
+    
+    
+            marker_426ba521e774ecda33d3b77ab8229dd1.bindTooltip(
+                `<div>
+                     🎯 Inter_Alvo_2_Alvo_3
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_426ba521e774ecda33d3b77ab8229dd1.setIcon(icon_ba1a0fd21154fb0f96349980dd4d5699);
+            
+</script>
+</html>
