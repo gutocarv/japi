@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Triangulação de Voo</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: linear-gradient(45deg, #e9ecef, #dee2e6);
+            transform: scale(1.02);
+        }
+        
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        input[type="number"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .analyze-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            min-width: 200px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .analyze-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #mapContainer {
+            height: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            background: #f8f9fa;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .results-table th {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .results-table tr:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .confidence-bar {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
+            transition: width 0.5s ease;
+        }
+        
+        .custom-focus-marker {
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .custom-focus-marker:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.6);
+        }
+        
+        .error { color: #e74c3c; font-weight: bold; }
+        .success { color: #27ae60; font-weight: bold; }
+        .loading { color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛩️ Análise de Triangulação de Voo</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 1.2em; color: #666; margin-bottom: 15px;">📁 Clique para selecionar um arquivo CSV</div>
+            <div style="font-size: 0.9em; color: #888;">Arraste e solte um arquivo CSV aqui ou clique para procurar</div>
+            <input type="file" id="fileInput" accept=".csv" />
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="minDuration">Duração Mínima (segundos)</label>
+                <input type="number" id="minDuration" value="10" min="1" max="60">
+            </div>
+            <div class="control-group">
+                <label for="maxHeadingVar">Variação Máxima Heading (graus)</label>
+                <input type="number" id="maxHeadingVar" value="30" min="5" max="90">
+            </div>
+            <div class="control-group">
+                <label for="minSpeed">Velocidade Mínima (mph)</label>
+                <input type="number" id="minSpeed" value="1" min="0" max="20" step="0.1">
+            </div>
+            <div class="control-group">
+                <label for="maxVectorLength">Comprimento Máx. Vetor (metros)</label>
+                <input type="number" id="maxVectorLength" value="15000" min="1000" max="50000">
+            </div>
+        </div>
+        
+        <button class="analyze-btn" id="analyzeBtn" disabled>🔍 Analisar Dados</button>
+        
+        <div id="output"></div>
+        <div id="mapContainer"></div>
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <script>
+        let csvData = null;
+        let map = null;
+        let validVectors = [];
+        let intersections = [];
+        
+        // Elementos DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const output = document.getElementById('output');
+        
+        // Configuração de eventos
+        uploadArea.addEventListener('click', (e) => {
+            // Evita abrir o diálogo se o clique foi em um elemento filho
+            if (e.target === uploadArea || e.target === fileInput) {
+                fileInput.click();
+            }
+        });
+        
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        analyzeBtn.addEventListener('click', analyzeData);
+        
+        // Mostrar mensagem inicial clara
+        showOutput('📌 Por favor, selecione ou arraste um arquivo CSV contendo dados de voo', 'loading');
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+            showOutput('🔄 Solte o arquivo CSV para carregar...', 'loading');
+        }
+        
+        function handleDragLeave() {
+            uploadArea.classList.remove('dragover');
+            showOutput('📌 Por favor, selecione ou arraste um arquivo CSV contendo dados de voo', 'loading');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        }
+        
+        function showOutput(text, type = '') {
+            output.textContent = text;
+            output.className = type;
+        }
+        
+        function addOutput(text) {
+            output.textContent += text + '\n';
+        }
+        
+        function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showOutput('❌ Por favor, selecione um arquivo CSV.', 'error');
+                return;
+            }
+            
+            showOutput('📖 Carregando arquivo...', 'loading');
+            
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                transformHeader: function(header) {
+                    return header.trim();
+                },
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        addOutput('⚠️ Avisos durante parsing:');
+                        results.errors.forEach(error => {
+                            addOutput(`  Linha ${error.row}: ${error.message}`);
+                        });
+                    }
+                    
+                    csvData = results.data.filter(row => {
+                        return Object.values(row).some(value => 
+                            value !== null && value !== undefined && value !== ''
+                        );
+                    });
+                    
+                    showOutput(`✅ Arquivo carregado: ${csvData.length} registros`, 'success');
+                    
+                    if (csvData.length > 0) {
+                        addOutput(`📋 Colunas: ${Object.keys(csvData[0]).join(', ')}`);
+                    }
+                    
+                    analyzeBtn.disabled = false;
+                },
+                error: function(error) {
+                    showOutput(`❌ Erro ao carregar arquivo: ${error.message}`, 'error');
+                }
+            });
+        }
+        
+        // Funções matemáticas
+        function toRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+        
+        function toDegrees(radians) {
+            return radians * (180 / Math.PI);
+        }
+        
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const phi1 = toRadians(lat1);
+            const phi2 = toRadians(lat2);
+            const dphi = toRadians(lat2 - lat1);
+            const dlambda = toRadians(lon2 - lon1);
+            
+            const a = Math.sin(dphi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dlambda / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+        
+        function calculateHeadingVariation(headings) {
+            const validHeadings = headings.filter(h => !isNaN(h) && h !== null);
+            if (validHeadings.length === 0) return [999, 0];
+            
+            const x = validHeadings.reduce((sum, h) => sum + Math.cos(toRadians(h)), 0) / validHeadings.length;
+            const y = validHeadings.reduce((sum, h) => sum + Math.sin(toRadians(h)), 0) / validHeadings.length;
+            const meanHeading = (toDegrees(Math.atan2(y, x)) + 360) % 360;
+            
+            const differences = validHeadings.map(h => {
+                let diff = Math.abs(h - meanHeading);
+                return Math.min(diff, 360 - diff);
+            });
+            
+            const std = Math.sqrt(differences.reduce((sum, d) => sum + d * d, 0) / differences.length);
+            return [std, meanHeading];
+        }
+        
+        function hasForwardMovement(segment) {
+            const elevatorValues = segment
+                .map(row => row['rc_elevator(percent)'])
+                .filter(val => !isNaN(val) && val !== null);
+                
+            if (elevatorValues.length === 0) return false;
+            
+            const forwardCount = elevatorValues.filter(val => val > 0).length;
+            return forwardCount >= elevatorValues.length * 0.7;
+        }
+        
+        function extractValidVectors(data) {
+            const vectors = [];
+            const diagnostic = {
+                totalSegments: 0,
+                rejectedDuration: 0,
+                rejectedHeading: 0,
+                rejectedSpeed: 0
+            };
+            
+            const MIN_DURATION = parseInt(document.getElementById('minDuration').value);
+            const MAX_HEADING_VAR = parseInt(document.getElementById('maxHeadingVar').value);
+            const MIN_SPEED = parseFloat(document.getElementById('minSpeed').value);
+            
+            data.sort((a, b) => new Date(a['datetime(utc)']) - new Date(b['datetime(utc)']));
+            
+            let i = 0;
+            while (i < data.length) {
+                const currentElevator = data[i]['rc_elevator(percent)'];
+                
+                if (currentElevator !== 0 && !isNaN(currentElevator) && currentElevator !== null) {
+                    const startIdx = i;
+                    const startTime = new Date(data[i]['datetime(utc)']);
+                    
+                    while (i < data.length) {
+                        const elevator = data[i]['rc_elevator(percent)'];
+                        if (elevator !== 0 && !isNaN(elevator) && elevator !== null) {
+                            i++;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    const endIdx = i - 1;
+                    const endTime = new Date(data[endIdx]['datetime(utc)']);
+                    const duration = (endTime - startTime) / 1000;
+                    
+                    diagnostic.totalSegments++;
+                    
+                    if (duration < MIN_DURATION) {
+                        diagnostic.rejectedDuration++;
+                        continue;
+                    }
+                    
+                    const segment = data.slice(startIdx, endIdx + 1);
+                    
+                    if (!hasForwardMovement(segment)) {
+                        continue;
+                    }
+                    
+                    const headings = segment.map(row => row['compass_heading(degrees)']);
+                    const [headingStd, meanHeading] = calculateHeadingVariation(headings);
+                    
+                    let avgSpeed;
+                    if (segment[0]['speed(mph)'] !== undefined) {
+                        avgSpeed = segment.reduce((sum, row) => sum + (row['speed(mph)'] || 0), 0) / segment.length;
+                    } else {
+                        const startPos = segment[0];
+                        const endPos = segment[segment.length - 1];
+                        const distanceM = haversineDistance(
+                            startPos.latitude, startPos.longitude,
+                            endPos.latitude, endPos.longitude
+                        );
+                        avgSpeed = duration > 0 ? (distanceM / duration) * 2.237 : 0;
+                    }
+                    
+                    if (headingStd > MAX_HEADING_VAR) {
+                        diagnostic.rejectedHeading++;
+                        continue;
+                    }
+                    
+                    if (avgSpeed < MIN_SPEED) {
+                        diagnostic.rejectedSpeed++;
+                        continue;
+                    }
+                    
+                    const MAX_VECTOR_LENGTH = parseInt(document.getElementById('maxVectorLength').value);
+                    const vectorLengthM = Math.min(avgSpeed * 0.44704 * duration, MAX_VECTOR_LENGTH);
+                    
+                    const vectorInfo = {
+                        startLat: segment[0].latitude,
+                        startLon: segment[0].longitude,
+                        meanHeading,
+                        headingStability: headingStd,
+                        durationS: duration,
+                        avgSpeedMph: avgSpeed,
+                        vectorLengthM: vectorLengthM,
+                        avgElevator: segment.reduce((sum, row) => sum + (row['rc_elevator(percent)'] || 0), 0) / segment.length
+                    };
+                    
+                    vectors.push(vectorInfo);
+                } else {
+                    i++;
+                }
+            }
+            
+            return [vectors, diagnostic];
+        }
+        
+        function createVectorLine(vector, bidirectional = true) {
+            const lat = vector.startLat;
+            const lon = vector.startLon;
+            const headingRad = toRadians(vector.meanHeading);
+            
+            if (bidirectional) {
+                const lengthM = Math.max(vector.vectorLengthM, 20000);
+                
+                const deltaLatFwd = (lengthM * Math.cos(headingRad)) / 111111;
+                const deltaLonFwd = (lengthM * Math.sin(headingRad)) / (111111 * Math.cos(toRadians(lat)));
+                const endLatFwd = lat + deltaLatFwd;
+                const endLonFwd = lon + deltaLonFwd;
+                
+                const deltaLatBack = -(lengthM * Math.cos(headingRad)) / 111111;
+                const deltaLonBack = -(lengthM * Math.sin(headingRad)) / (111111 * Math.cos(toRadians(lat)));
+                const endLatBack = lat + deltaLatBack;
+                const endLonBack = lon + deltaLonBack;
+                
+                return {
+                    type: 'LineString',
+                    coordinates: [[endLonBack, endLatBack], [endLonFwd, endLatFwd]]
+                };
+            } else {
+                const lengthM = vector.vectorLengthM;
+                const deltaLat = (lengthM * Math.cos(headingRad)) / 111111;
+                const deltaLon = (lengthM * Math.sin(headingRad)) / (111111 * Math.cos(toRadians(lat)));
+                const endLat = lat + deltaLat;
+                const endLon = lon + deltaLon;
+                
+                return {
+                    type: 'LineString',
+                    coordinates: [[lon, lat], [endLon, endLat]]
+                };
+            }
+        }
+        
+        function lineIntersection(line1, line2) {
+            const [[x1, y1], [x2, y2]] = line1.coordinates;
+            const [[x3, y3], [x4, y4]] = line2.coordinates;
+            
+            const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (Math.abs(denom) < 1e-10) return null;
+            
+            const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+            
+            const x = x1 + t * (x2 - x1);
+            const y = y1 + t * (y2 - y1);
+            
+            return { x, y };
+        }
+        
+        function calculateVectorIntersections(vectors) {
+            const intersections = [];
+            const vectorLines = vectors.map(v => createVectorLine(v, true));
+            
+            for (let i = 0; i < vectors.length; i++) {
+                for (let j = i + 1; j < vectors.length; j++) {
+                    const v1 = vectors[i];
+                    const v2 = vectors[j];
+                    const line1 = vectorLines[i];
+                    const line2 = vectorLines[j];
+                    
+                    let angleDiff = Math.abs(v1.meanHeading - v2.meanHeading);
+                    angleDiff = Math.min(angleDiff, 360 - angleDiff);
+                    
+                    if (angleDiff > 0.5 && angleDiff < 179.5) {
+                        const intersection = lineIntersection(line1, line2);
+                        
+                        if (intersection) {
+                            const distToV1 = haversineDistance(v1.startLat, v1.startLon, intersection.y, intersection.x);
+                            const distToV2 = haversineDistance(v2.startLat, v2.startLon, intersection.y, intersection.x);
+                            
+                            if (distToV1 > 100 && distToV2 > 100) {
+                                const confidence = calculateConfidence(v1, v2, angleDiff, distToV1, distToV2);
+                                
+                                intersections.push({
+                                    vector1Idx: i,
+                                    vector2Idx: j,
+                                    angleBetween: angleDiff,
+                                    lat: intersection.y,
+                                    lon: intersection.x,
+                                    distanceToV1M: distToV1,
+                                    distanceToV2M: distToV2,
+                                    confidence
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return intersections;
+        }
+        
+        function calculateConfidence(v1, v2, angleDiff, dist1, dist2) {
+            const MAX_HEADING_VAR = parseInt(document.getElementById('maxHeadingVar').value);
+            const MIN_DURATION = parseInt(document.getElementById('minDuration').value);
+            
+            const angleScore = 1 - Math.abs(90 - angleDiff) / 60;
+            const stabilityScore = 1 - (v1.headingStability + v2.headingStability) / (2 * MAX_HEADING_VAR);
+            const durationScore = Math.min((v1.durationS + v2.durationS) / (2 * MIN_DURATION), 1);
+            const maxReasonableDistance = 5000;
+            const distanceScore = 1 - Math.min(Math.max(dist1, dist2) / maxReasonableDistance, 1);
+            
+            const confidence = (angleScore + stabilityScore + durationScore + distanceScore) / 4;
+            return Math.max(0, Math.min(1, confidence));
+        }
+        
+        function createMap(vectors, intersections) {
+            const mapContainer = document.getElementById('mapContainer');
+            
+            if (typeof L === 'undefined') {
+                createCoordinatesTable(vectors, intersections);
+                return;
+            }
+            
+            if (map) {
+                map.remove();
+            }
+            
+            mapContainer.innerHTML = '';
+            
+            let centerLat, centerLon;
+            if (intersections.length > 0) {
+                centerLat = intersections[0].lat;
+                centerLon = intersections[0].lon;
+            } else {
+                centerLat = vectors.reduce((sum, v) => sum + v.startLat, 0) / vectors.length;
+                centerLon = vectors.reduce((sum, v) => sum + v.startLon, 0) / vectors.length;
+            }
+            
+            map = L.map('mapContainer').setView([centerLat, centerLon], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            const colors = ['blue', 'green', 'purple', 'orange', 'red', 'darkblue', 'darkgreen', 'cadetblue', 'darkred', 'pink'];
+            
+            // Plotar vetores e seus marcadores
+            vectors.forEach((vector, i) => {
+                const color = colors[i % colors.length];
+                
+                L.marker([vector.startLat, vector.startLon], {
+                    icon: L.divIcon({
+                        html: `<div style="background: ${color}; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${i + 1}</div>`,
+                        className: 'custom-marker',
+                        iconSize: [25, 25]
+                    })
+                }).bindPopup(`<b>Vetor ${i + 1}</b><br>Heading: ${vector.meanHeading.toFixed(1)}°<br>Duração: ${vector.durationS.toFixed(0)}s<br>Lat: ${vector.startLat.toFixed(6)}<br>Lon: ${vector.startLon.toFixed(6)}`).addTo(map);
+                
+                const lineVisual = createVectorLine(vector, false);
+                L.polyline(lineVisual.coordinates.map(coord => [coord[1], coord[0]]), {
+                    color: color,
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(map);
+            });
+            
+            // Plotar focos (interseções) com melhor visualização
+            intersections.forEach((inter, i) => {
+                const size = Math.max(10, 25 - i * 2);
+                const opacity = 0.4 + 0.6 * inter.confidence;
+                
+                // Criar marcador customizado para foco
+                const focusMarker = L.marker([inter.lat, inter.lon], {
+                    icon: L.divIcon({
+                        html: `<div class="custom-focus-marker" style="width: ${size}px; height: ${size}px;">F${i + 1}</div>`,
+                        className: 'custom-focus-icon',
+                        iconSize: [size, size]
+                    })
+                });
+                
+                // Popup detalhado no mouseover
+                focusMarker.bindPopup(`
+                    <div style="min-width: 200px;">
+                        <b>🎯 Foco ${i + 1}</b><br>
+                        <b>Coordenadas:</b><br>
+                        Lat: ${inter.lat.toFixed(6)}<br>
+                        Lon: ${inter.lon.toFixed(6)}<br>
+                        <b>Confiança:</b> ${(inter.confidence * 100).toFixed(1)}%<br>
+                        <b>Ângulo entre vetores:</b> ${inter.angleBetween.toFixed(1)}°<br>
+                        <b>Distâncias:</b><br>
+                        Vetor ${inter.vector1Idx + 1}: ${inter.distanceToV1M.toFixed(0)}m<br>
+                        Vetor ${inter.vector2Idx + 1}: ${inter.distanceToV2M.toFixed(0)}m
+                    </div>
+                `);
+                
+                // Mostrar popup no mouseover
+                focusMarker.on('mouseover', function(e) {
+                    this.openPopup();
+                });
+                
+                focusMarker.addTo(map);
+                
+                // Plotar linhas tracejadas dos pontos iniciais dos vetores até o foco
+                const vector1 = vectors[inter.vector1Idx];
+                const vector2 = vectors[inter.vector2Idx];
+                
+                // Linha tracejada do vetor 1 ao foco
+                L.polyline([
+                    [vector1.startLat, vector1.startLon],
+                    [inter.lat, inter.lon]
+                ], {
+                    color: '#e74c3c',
+                    weight: 2,
+                    opacity: 0.7,
+                    dashArray: '5, 10',
+                    dashOffset: '0'
+                }).bindPopup(`Conexão: Vetor ${inter.vector1Idx + 1} → Foco ${i + 1}`).addTo(map);
+                
+                // Linha tracejada do vetor 2 ao foco
+                L.polyline([
+                    [vector2.startLat, vector2.startLon],
+                    [inter.lat, inter.lon]
+                ], {
+                    color: '#e74c3c',
+                    weight: 2,
+                    opacity: 0.7,
+                    dashArray: '5, 10',
+                    dashOffset: '0'
+                }).bindPopup(`Conexão: Vetor ${inter.vector2Idx + 1} → Foco ${i + 1}`).addTo(map);
+            });
+        }
+        
+        function createCoordinatesTable(vectors, intersections) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            resultsContainer.innerHTML = `
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h3>📍 Coordenadas dos Pontos</h3>
+                    
+                    <h4>🛩️ Vetores de Voo:</h4>
+                    <table class="results-table">
+                        <tr>
+                            <th>Vetor</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Heading</th>
+                            <th>Duração (s)</th>
+                            <th>Velocidade (mph)</th>
+                            <th>Estabilidade</th>
+                        </tr>
+                        ${vectors.map((v, i) => `
+                            <tr>
+                                <td><strong>${i + 1}</strong></td>
+                                <td>${v.startLat.toFixed(6)}</td>
+                                <td>${v.startLon.toFixed(6)}</td>
+                                <td>${v.meanHeading.toFixed(1)}°</td>
+                                <td>${v.durationS.toFixed(1)}</td>
+                                <td>${v.avgSpeedMph.toFixed(1)}</td>
+                                <td>${v.headingStability.toFixed(1)}°</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    
+                    ${intersections.length > 0 ? `
+                    <h4 style="margin-top: 30px;">🎯 Focos Detectados (Pontos de Interseção):</h4>
+                    <table class="results-table">
+                        <tr>
+                            <th>Foco</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>Vetores</th>
+                            <th>Ângulo entre Vetores</th>
+                            <th>Confiança</th>
+                            <th>Distâncias aos Vetores</th>
+                            <th>Google Maps</th>
+                        </tr>
+                        ${intersections.map((inter, i) => `
+                            <tr>
+                                <td><strong>F${i + 1}</strong></td>
+                                <td><strong>${inter.lat.toFixed(6)}</strong></td>
+                                <td><strong>${inter.lon.toFixed(6)}</strong></td>
+                                <td>V${inter.vector1Idx + 1} × V${inter.vector2Idx + 1}</td>
+                                <td>${inter.angleBetween.toFixed(1)}°</td>
+                                <td>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" style="width: ${inter.confidence * 100}%"></div>
+                                    </div>
+                                    ${(inter.confidence * 100).toFixed(1)}%
+                                </td>
+                                <td>
+                                    V${inter.vector1Idx + 1}: ${inter.distanceToV1M.toFixed(0)}m<br>
+                                    V${inter.vector2Idx + 1}: ${inter.distanceToV2M.toFixed(0)}m
+                                </td>
+                                <td>
+                                    <a href="https://www.google.com/maps?q=${inter.lat},${inter.lon}" target="_blank" style="color: #3498db; text-decoration: none;">
+                                        📍 Ver no mapa
+                                    </a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    
+                    <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
+                        <h5 style="margin-top: 0; color: #2c3e50;">📊 Resumo da Análise:</h5>
+                        <p><strong>Total de Vetores:</strong> ${vectors.length}</p>
+                        <p><strong>Total de Focos:</strong> ${intersections.length}</p>
+                        ${intersections.length > 0 ? `
+                        <p><strong>Foco com Maior Confiança:</strong> F${intersections.indexOf(intersections.reduce((max, inter) => inter.confidence > max.confidence ? inter : max)) + 1} (${(intersections.reduce((max, inter) => inter.confidence > max.confidence ? inter : max).confidence * 100).toFixed(1)}%)</p>
+                        <p><strong>Coordenadas do Melhor Foco:</strong> ${intersections.reduce((max, inter) => inter.confidence > max.confidence ? inter : max).lat.toFixed(6)}, ${intersections.reduce((max, inter) => inter.confidence > max.confidence ? inter : max).lon.toFixed(6)}</p>
+                        ` : ''}
+                    </div>
+                    ` : '<div style="margin-top: 20px; padding: 15px; background: rgba(231, 76, 60, 0.1); border-radius: 8px; color: #c0392b;"><strong>⚠️ Nenhum foco detectado.</strong><br>Tente ajustar os parâmetros de análise para obter resultados.</div>'}
+                </div>
+            `;
+        }
+        
+        function analyzeData() {
+            if (!csvData || csvData.length === 0) {
+                showOutput('❌ Nenhum dado disponível para análise. Carregue um arquivo CSV primeiro.', 'error');
+                return;
+            }
+            
+            showOutput('🔍 Analisando dados...', 'loading');
+            analyzeBtn.disabled = true;
+            
+            setTimeout(() => {
+                try {
+                    const [vectors, diagnostic] = extractValidVectors(csvData);
+                    validVectors = vectors;
+                    
+                    addOutput(`\n🔍 Análise concluída:`);
+                    addOutput(`- Segmentos totais: ${diagnostic.totalSegments}`);
+                    addOutput(`- Rejeitados por duração: ${diagnostic.rejectedDuration}`);
+                    addOutput(`- Rejeitados por variação de heading: ${diagnostic.rejectedHeading}`);
+                    addOutput(`- Rejeitados por velocidade: ${diagnostic.rejectedSpeed}`);
+                    addOutput(`- Vetores válidos encontrados: ${vectors.length}`);
+                    
+                    if (vectors.length > 0) {
+                        intersections = calculateVectorIntersections(vectors);
+                        addOutput(`- Interseções encontradas: ${intersections.length}`);
+                        
+                        if (intersections.length > 0) {
+                            const bestFocus = intersections.reduce((max, inter) => inter.confidence > max.confidence ? inter : max);
+                            addOutput(`- Melhor foco: F${intersections.indexOf(bestFocus) + 1} com ${(bestFocus.confidence * 100).toFixed(1)}% de confiança`);
+                            addOutput(`- Coordenadas: ${bestFocus.lat.toFixed(6)}, ${bestFocus.lon.toFixed(6)}`);
+                        }
+                        
+                        createMap(vectors, intersections);
+                        createCoordinatesTable(vectors, intersections);
+                    } else {
+                        showOutput('⚠️ Nenhum vetor válido encontrado com os parâmetros atuais.', 'error');
+                        document.getElementById('resultsContainer').innerHTML = '';
+                    }
+                } catch (error) {
+                    showOutput(`❌ Erro durante análise: ${error.message}`, 'error');
+                    console.error(error);
+                } finally {
+                    analyzeBtn.disabled = false;
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
