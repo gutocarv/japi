@@ -134,6 +134,10 @@
             background: linear-gradient(45deg, #607d8b, #455a64);
         }
         
+        .btn-refresh {
+            background: linear-gradient(45deg, #673AB7, #512DA8);
+        }
+        
         .stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -167,6 +171,7 @@
             height: 500px;
             border-radius: 10px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background: #2c3e50; /* Cor de fundo enquanto carrega */
         }
         
         .map-loading {
@@ -387,6 +392,48 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+        
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 500;
+            background: white;
+            border-radius: 4px;
+            padding: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        }
+        
+        .map-type-selector {
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .refresh-map-btn {
+            width: 100%;
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            background: #673AB7;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .refresh-map-btn:hover {
+            background: #5E35B1;
+        }
+        
+        .map-tips {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -495,6 +542,16 @@
             </div>
             <h3>🗺️ Mapa de Localização de Tubarões</h3>
             <div id="map"></div>
+            
+            <div class="map-tips">
+                <p><strong>💡 Dica:</strong> Se o mapa não carregar completamente, tente:</p>
+                <ul>
+                    <li>Redimensionar a janela do navegador</li>
+                    <li>Usar o botão "Atualizar Mapa" no canto superior direito do mapa</li>
+                    <li>Selecionar um tipo de mapa diferente no menu suspenso</li>
+                </ul>
+            </div>
+            
             <div class="legend" id="mapLegend">
                 <!-- A legenda será gerada dinamicamente pelo JavaScript -->
             </div>
@@ -503,6 +560,9 @@
         <div class="action-buttons" id="actionButtons" style="display: none;">
             <button class="btn btn-consolidate" id="consolidateData">
                 📊 Consolidar Dados de Vídeo
+            </button>
+            <button class="btn btn-refresh" id="refreshMap">
+                🔄 Atualizar Visualização do Mapa
             </button>
             <button class="btn btn-secondary" id="clearAll">
                 🗑️ Limpar Todos os Voos
@@ -523,8 +583,39 @@
             '#8BC34A', '#FFC107', '#3F51B5', '#F44336', '#009688'
         ];
         
-        // Cache para tiles já carregados
-        const tileCache = {};
+        // Opções de tiles para o mapa
+        const tileProviders = {
+            osm: {
+                name: 'OpenStreetMap',
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            },
+            osmHot: {
+                name: 'OpenStreetMap.HOT',
+                url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team',
+                maxZoom: 19
+            },
+            carto: {
+                name: 'CartoDB.Voyager',
+                url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                attribution: '© OpenStreetMap contributors, © CartoDB',
+                maxZoom: 20
+            },
+            stamen: {
+                name: 'Stamen.Terrain',
+                url: 'https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png',
+                attribution: 'Map tiles by Stamen Design, CC BY 3.0',
+                maxZoom: 18
+            },
+            esri: {
+                name: 'Esri.WorldImagery',
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles © Esri',
+                maxZoom: 19
+            }
+        };
         
         // Inicializar a aplicação
         window.addEventListener('load', function() {
@@ -555,6 +646,7 @@
             const flightList = document.getElementById('flightList');
             const noFlightsMessage = document.getElementById('noFlightsMessage');
             const consolidateBtn = document.getElementById('consolidateData');
+            const refreshMapBtn = document.getElementById('refreshMap');
             const clearAllBtn = document.getElementById('clearAll');
             const actionButtons = document.getElementById('actionButtons');
             
@@ -590,7 +682,18 @@
             loadExampleBtn.addEventListener('click', loadExampleData);
             addFlightBtn.addEventListener('click', () => fileInput.click());
             consolidateBtn.addEventListener('click', consolidateVideoData);
+            refreshMapBtn.addEventListener('click', refreshMapView);
             clearAllBtn.addEventListener('click', clearAllFlights);
+            
+            // Adicionar listener para redimensionamento da janela
+            window.addEventListener('resize', function() {
+                if (map) {
+                    // Pequeno timeout para garantir que o redimensionamento foi concluído
+                    setTimeout(function() {
+                        map.invalidateSize();
+                    }, 200);
+                }
+            });
             
             downloadExampleBtn.addEventListener('click', function() {
                 const exampleContent = "latitude,longitude,isVideo,altitude,speed\n-3.845617,-32.425712,1,120,15\n-3.845721,-32.425832,1,125,16\n-3.845832,-32.425945,0,130,17\n-3.845945,-32.426051,1,128,16\n-3.846112,-32.426215,1,130,15\n-3.846288,-32.426388,0,132,16\n-3.846452,-32.426572,1,135,17\n-3.846603,-32.426723,1,130,16\n-3.846754,-32.426874,1,128,15\n-3.846912,-32.427032,0,125,14";
@@ -793,7 +896,10 @@
                         
                         map = L.map('map', {
                             preferCanvas: true, // Usar canvas para melhor performance
-                            zoomControl: false // Vamos adicionar manualmente depois
+                            zoomControl: false, // Vamos adicionar manualmente depois
+                            fadeAnimation: false, // Desativar animações para melhor performance
+                            zoomAnimation: false,
+                            markerZoomAnimation: false
                         }).setView([centerLat, centerLng], 14);
                         
                         // Adicionar controle de zoom em posição específica
@@ -802,18 +908,66 @@
                         }).addTo(map);
                         
                         // Adicionar camada base com otimizações
-                        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors',
-                            maxZoom: 18,
+                        const baseLayer = L.tileLayer(tileProviders.carto.url, {
+                            attribution: tileProviders.carto.attribution,
+                            maxZoom: tileProviders.carto.maxZoom,
                             minZoom: 10,
                             useCache: true,
-                            crossOrigin: true
+                            crossOrigin: true,
+                            detectRetina: false // Desativar detecção de retina para melhor performance
                         }).addTo(map);
+                        
+                        // Adicionar controle para trocar o tipo de mapa
+                        const mapControl = L.control({position: 'topright'});
+                        mapControl.onAdd = function(map) {
+                            const div = L.DomUtil.create('div', 'map-controls');
+                            div.innerHTML = `
+                                <select class="map-type-selector" id="mapTypeSelector">
+                                    <option value="carto">CartoDB Voyager</option>
+                                    <option value="osm">OpenStreetMap</option>
+                                    <option value="osmHot">OpenStreetMap HOT</option>
+                                    <option value="stamen">Stamen Terrain</option>
+                                    <option value="esri">Esri Satélite</option>
+                                </select>
+                                <button class="refresh-map-btn" id="refreshMapBtn">Atualizar Mapa</button>
+                            `;
+                            
+                            // Event listener para trocar o tipo de mapa
+                            div.querySelector('#mapTypeSelector').addEventListener('change', function(e) {
+                                const selectedType = e.target.value;
+                                map.eachLayer(layer => {
+                                    if (layer instanceof L.TileLayer) {
+                                        map.removeLayer(layer);
+                                    }
+                                });
+                                
+                                const newLayer = L.tileLayer(tileProviders[selectedType].url, {
+                                    attribution: tileProviders[selectedType].attribution,
+                                    maxZoom: tileProviders[selectedType].maxZoom,
+                                    minZoom: 10,
+                                    useCache: true,
+                                    crossOrigin: true,
+                                    detectRetina: false
+                                }).addTo(map);
+                            });
+                            
+                            // Event listener para atualizar o mapa
+                            div.querySelector('#refreshMapBtn').addEventListener('click', function() {
+                                refreshMapView();
+                            });
+                            
+                            return div;
+                        };
+                        mapControl.addTo(map);
                         
                         // Evento para esconder o loading quando os tiles estiverem carregados
                         map.whenReady(function() {
                             setTimeout(() => {
                                 mapLoading.style.display = 'none';
+                                // Forçar atualização do tamanho do mapa após carregamento
+                                setTimeout(() => {
+                                    map.invalidateSize();
+                                }, 100);
                             }, 500);
                         });
                     } else {
@@ -879,6 +1033,11 @@
                         map.fitBounds(bounds.pad(0.1));
                     }
                     
+                    // Forçar atualização do mapa após adicionar todos os elementos
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 300);
+                    
                     // Atualizar a legenda
                     updateLegend();
                     
@@ -890,6 +1049,22 @@
                         mapLoading.style.display = 'none';
                     }, 2000);
                 }, 100);
+            }
+            
+            function refreshMapView() {
+                if (map) {
+                    // Forçar redimensionamento e atualização do mapa
+                    map.invalidateSize();
+                    
+                    // Pequeno zoom para forçar a atualização de todos os tiles
+                    const currentZoom = map.getZoom();
+                    map.setZoom(currentZoom - 0.01);
+                    setTimeout(() => {
+                        map.setZoom(currentZoom);
+                    }, 100);
+                    
+                    showSuccess('Visualização do mapa atualizada!');
+                }
             }
             
             function updateLegend() {
