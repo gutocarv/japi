@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapeador Multi-Voo - Fernando de Noronha</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .upload-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .info-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .upload-area {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .upload-area.dragover {
+            background: rgba(76, 175, 80, 0.15);
+            border-color: #4CAF50;
+        }
+        
+        .upload-icon {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: inline-block;
+            margin: 8px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #2196F3, #0b7dda);
+        }
+        
+        .btn-example {
+            background: linear-gradient(45deg, #9c27b0, #6a1b9a);
+        }
+        
+        .btn-add {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        
+        .btn-consolidate {
+            background: linear-gradient(45deg, #607d8b, #455a64);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+        
+        .map-container {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            position: relative;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .map-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        
+        .map-loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        .map-loading-text {
+            font-size: 1.2em;
+            color: white;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: rgba(244, 67, 54, 0.15);
+            color: #ffebee;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #f44336;
+            display: none;
+        }
+        
+        .success {
+            background: rgba(76, 175, 80, 0.15);
+            color: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+            display: none;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .legend-line {
+            display: inline-block;
+            width: 30px;
+            height: 5px;
+            border-radius: 2px;
+        }
+        
+        .info-box {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #4CAF50;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .info-list {
+            padding-left: 20px;
+        }
+        
+        .info-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .example-csv {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        
+        h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .instructions {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin: 12px 0;
+        }
+        
+        .flight-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .flight-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        
+        .flight-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .flight-name {
+            flex-grow: 1;
+            font-size: 0.9em;
+        }
+        
+        .flight-stats {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-left: 10px;
+        }
+        
+        .flight-actions {
+            margin-left: 10px;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8em;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-small:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tile-loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦈 Mapeador Multi-Voo - Fernando de Noronha</h1>
+            <p>Analise múltiplos voos de drone DJI e identifique áreas com avistamento de tubarões</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section">
+                <h3>📤 Upload de Dados do Voo</h3>
+                <div class="upload-area" id="uploadArea">
+                    <span class="upload-icon">📁</span>
+                    <h3>Arraste seu arquivo CSV aqui</h3>
+                    <p class="instructions">Ou clique para selecionar o arquivo de log do voo do drone DJI</p>
+                    <input type="file" id="fileInput" accept=".csv" multiple />
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        Selecionar Arquivo CSV
+                    </button>
+                    <button class="btn btn-add" id="addFlight">
+                        Adicionar CSV
+                    </button>
+                    <button class="btn btn-example" id="loadExample">
+                        Carregar Exemplo
+                    </button>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Processando dados do voo...</p>
+                </div>
+                
+                <div class="error" id="error"></div>
+                <div class="success" id="success"></div>
+                
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalFlights">0</div>
+                        <div>Voos Carregados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSegments">0</div>
+                        <div>Segmentos com Vídeo</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPoints">0</div>
+                        <div>Pontos com Vídeo</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDistance">0</div>
+                        <div>Distância Total (km)</div>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Voos Carregados</h3>
+                    <div class="flight-list" id="flightList">
+                        <p class="instructions" id="noFlightsMessage">Nenhum voo carregado ainda.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>ℹ️ Informações do Sistema</h3>
+                
+                <div class="info-box">
+                    <h3>Como Funciona</h3>
+                    <p>Este sistema analisa múltiplos arquivos CSV gerados por drones DJI durante voos em Fernando de Noronha, mapeando pontos onde houve gravação de vídeo para identificação de tubarões.</p>
+                    <p>Cada voo é representado por uma cor diferente no mapa.</p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Formato do Arquivo CSV</h3>
+                    <p>Seus arquivos CSV devem conter as seguintes colunas:</p>
+                    <ul class="info-list">
+                        <li><strong>latitude</strong> e <strong>longitude</strong> - Coordenadas do drone</li>
+                        <li><strong>isVideo</strong> - Indicador se o vídeo estava gravando (0 ou 1)</li>
+                        <li><strong>altitude</strong> - Altitude em pés</li>
+                        <li><strong>speed</strong> - Velocidade em mph</li>
+                        <li><strong>datetime</strong> - Data e hora (opcional)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Exemplo de CSV</h3>
+                    <div class="example-csv">
+                        latitude,longitude,isVideo,altitude,speed<br>
+                        -3.845617,-32.425712,1,120,15<br>
+                        -3.845721,-32.425832,1,125,16<br>
+                        -3.845832,-32.425945,0,130,17<br>
+                        -3.845945,-32.426051,1,128,16
+                    </div>
+                    <button class="btn btn-small" id="downloadExample">Download CSV Exemplo</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container" id="mapContainer" style="display: none;">
+            <div class="map-loading" id="mapLoading">
+                <div class="map-loading-spinner"></div>
+                <div class="map-loading-text">Carregando mapa...</div>
+            </div>
+            <h3>🗺️ Mapa de Localização de Tubarões</h3>
+            <div id="map"></div>
+            <div class="legend" id="mapLegend">
+                <!-- A legenda será gerada dinamicamente pelo JavaScript -->
+            </div>
+        </div>
+        
+        <div class="action-buttons" id="actionButtons" style="display: none;">
+            <button class="btn btn-consolidate" id="consolidateData">
+                📊 Consolidar Dados de Vídeo
+            </button>
+            <button class="btn btn-secondary" id="clearAll">
+                🗑️ Limpar Todos os Voos
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    
+    <script>
+        // Variáveis globais
+        let map;
+        let allFlights = [];
+        const colorPalette = [
+            '#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', 
+            '#00BCD4', '#FFEB3B', '#FF5722', '#795548', '#607D8B',
+            '#8BC34A', '#FFC107', '#3F51B5', '#F44336', '#009688'
+        ];
+        
+        // Cache para tiles já carregados
+        const tileCache = {};
+        
+        // Inicializar a aplicação
+        window.addEventListener('load', function() {
+            if (typeof L === 'undefined') {
+                showError('Erro: Biblioteca de mapas não carregou. Verifique sua conexão com a internet.');
+                return;
+            }
+            if (typeof Papa === 'undefined') {
+                showError('Erro: Biblioteca de CSV não carregou. Verifique sua conexão com a internet.');
+                return;
+            }
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Configurar área de upload
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const successDiv = document.getElementById('success');
+            const stats = document.getElementById('stats');
+            const mapContainer = document.getElementById('mapContainer');
+            const mapLoading = document.getElementById('mapLoading');
+            const loadExampleBtn = document.getElementById('loadExample');
+            const addFlightBtn = document.getElementById('addFlight');
+            const downloadExampleBtn = document.getElementById('downloadExample');
+            const flightList = document.getElementById('flightList');
+            const noFlightsMessage = document.getElementById('noFlightsMessage');
+            const consolidateBtn = document.getElementById('consolidateData');
+            const clearAllBtn = document.getElementById('clearAll');
+            const actionButtons = document.getElementById('actionButtons');
+            
+            // Configurar drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFiles(files);
+                }
+            });
+            
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFiles(e.target.files);
+                }
+            });
+            
+            loadExampleBtn.addEventListener('click', loadExampleData);
+            addFlightBtn.addEventListener('click', () => fileInput.click());
+            consolidateBtn.addEventListener('click', consolidateVideoData);
+            clearAllBtn.addEventListener('click', clearAllFlights);
+            
+            downloadExampleBtn.addEventListener('click', function() {
+                const exampleContent = "latitude,longitude,isVideo,altitude,speed\n-3.845617,-32.425712,1,120,15\n-3.845721,-32.425832,1,125,16\n-3.845832,-32.425945,0,130,17\n-3.845945,-32.426051,1,128,16\n-3.846112,-32.426215,1,130,15\n-3.846288,-32.426388,0,132,16\n-3.846452,-32.426572,1,135,17\n-3.846603,-32.426723,1,130,16\n-3.846754,-32.426874,1,128,15\n-3.846912,-32.427032,0,125,14";
+                
+                const blob = new Blob([exampleContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'exemplo_voo_drone.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                successDiv.style.display = 'none';
+            }
+            
+            function showSuccess(message) {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+            }
+            
+            function handleFiles(files) {
+                const csvFiles = Array.from(files).filter(file => 
+                    file.name.toLowerCase().endsWith('.csv')
+                );
+                
+                if (csvFiles.length === 0) {
+                    showError('Por favor, selecione arquivos CSV válidos.');
+                    return;
+                }
+                
+                loading.style.display = 'block';
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                
+                // Processar cada arquivo
+                let processedCount = 0;
+                csvFiles.forEach(file => {
+                    Papa.parse(file, {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: true,
+                        complete: function(results) {
+                            processFlightData(results.data, file.name);
+                            processedCount++;
+                            
+                            if (processedCount === csvFiles.length) {
+                                loading.style.display = 'none';
+                                updateMap();
+                                updateStats();
+                                updateFlightList();
+                                showSuccess(`${csvFiles.length} voo(s) processado(s) com sucesso!`);
+                                actionButtons.style.display = 'flex';
+                            }
+                        },
+                        error: function(error) {
+                            processedCount++;
+                            console.error('Erro ao processar arquivo:', file.name, error);
+                            
+                            if (processedCount === csvFiles.length) {
+                                loading.style.display = 'none';
+                                if (allFlights.length > 0) {
+                                    updateMap();
+                                    updateStats();
+                                    updateFlightList();
+                                    showSuccess('Alguns voos foram processados com sucesso!');
+                                    actionButtons.style.display = 'flex';
+                                } else {
+                                    showError('Nenhum voo foi processado com sucesso.');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            
+            function processFlightData(data, fileName) {
+                try {
+                    const flightPoints = [];
+                    const flightVideoSegments = [];
+                    
+                    // Processar cada linha do CSV
+                    for (let i = 0; i < data.length; i++) {
+                        const row = data[i];
+                        
+                        // Obter valores das colunas (compatibilidade com vários formatos)
+                        const lat = row.latitude || row.Latitude || row.lat;
+                        const lng = row.longitude || row.Longitude || row.lng || row.lon;
+                        const isVideo = row.isVideo || row.IsVideo || row.video || 0;
+                        const altitude = row.altitude || row.Altitude || row.alt || 0;
+                        const speed = row.speed || row.Speed || 0;
+                        const time = row.datetime || row.time || row.timestamp || '';
+                        
+                        // Verificar se temos coordenadas válidas
+                        if (lat !== undefined && lng !== undefined && 
+                            !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+                            
+                            const point = {
+                                lat: parseFloat(lat),
+                                lng: parseFloat(lng),
+                                time: time,
+                                altitude: parseFloat(altitude),
+                                speed: parseFloat(speed),
+                                isVideo: parseInt(isVideo),
+                                index: i
+                            };
+                            
+                            flightPoints.push(point);
+                        }
+                    }
+                    
+                    if (flightPoints.length === 0) {
+                        console.warn(`Nenhum ponto válido encontrado no arquivo: ${fileName}`);
+                        return;
+                    }
+                    
+                    // Identificar segmentos de vídeo contínuos
+                    const segments = identifyVideoSegments(flightPoints);
+                    
+                    // Calcular estatísticas do voo
+                    const videoPointsCount = flightPoints.filter(p => p.isVideo).length;
+                    const flightDistance = segments.reduce((total, segment) => 
+                        total + calculateSegmentDistance(segment.points), 0);
+                    
+                    // Adicionar voo à lista
+                    const flightColor = colorPalette[allFlights.length % colorPalette.length];
+                    const flight = {
+                        id: Date.now() + Math.random().toString(36).substr(2, 5),
+                        name: fileName.replace('.csv', ''),
+                        points: flightPoints,
+                        segments: segments,
+                        color: flightColor,
+                        videoPoints: videoPointsCount,
+                        distance: flightDistance,
+                        visible: true,
+                        originalData: data // Manter os dados originais para exportação
+                    };
+                    
+                    allFlights.push(flight);
+                    
+                } catch (error) {
+                    console.error('Erro ao processar os dados do voo:', fileName, error);
+                }
+            }
+            
+            function identifyVideoSegments(points) {
+                const segments = [];
+                let currentSegment = null;
+                
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[i];
+                    
+                    if (point.isVideo) {
+                        if (!currentSegment) {
+                            // Início de um novo segmento
+                            currentSegment = {
+                                startIndex: i,
+                                points: [point]
+                            };
+                        } else {
+                            // Continuação do segmento atual
+                            currentSegment.points.push(point);
+                        }
+                    } else {
+                        if (currentSegment) {
+                            // Fim do segmento atual
+                            currentSegment.endIndex = i - 1;
+                            segments.push(currentSegment);
+                            currentSegment = null;
+                        }
+                    }
+                }
+                
+                // Adicionar o último segmento se estiver ativo no final
+                if (currentSegment) {
+                    currentSegment.endIndex = points.length - 1;
+                    segments.push(currentSegment);
+                }
+                
+                return segments;
+            }
+            
+            function updateMap() {
+                // Mostrar indicador de carregamento
+                const mapLoading = document.getElementById('mapLoading');
+                mapLoading.style.display = 'flex';
+                
+                // Usar setTimeout para garantir que a UI seja atualizada antes do processamento pesado
+                setTimeout(() => {
+                    if (!map) {
+                        // Calcular centro do mapa baseado em Fernando de Noronha
+                        const centerLat = -3.846;
+                        const centerLng = -32.426;
+                        
+                        map = L.map('map', {
+                            preferCanvas: true, // Usar canvas para melhor performance
+                            zoomControl: false // Vamos adicionar manualmente depois
+                        }).setView([centerLat, centerLng], 14);
+                        
+                        // Adicionar controle de zoom em posição específica
+                        L.control.zoom({
+                            position: 'topright'
+                        }).addTo(map);
+                        
+                        // Adicionar camada base com otimizações
+                        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 18,
+                            minZoom: 10,
+                            useCache: true,
+                            crossOrigin: true
+                        }).addTo(map);
+                        
+                        // Evento para esconder o loading quando os tiles estiverem carregados
+                        map.whenReady(function() {
+                            setTimeout(() => {
+                                mapLoading.style.display = 'none';
+                            }, 500);
+                        });
+                    } else {
+                        // Limpar o mapa exceto os tiles base
+                        map.eachLayer(layer => {
+                            if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+                                map.removeLayer(layer);
+                            }
+                        });
+                    }
+                    
+                    // Adicionar cada voo ao mapa
+                    const bounds = L.latLngBounds();
+                    let hasVisibleData = false;
+                    
+                    allFlights.forEach((flight, flightIndex) => {
+                        if (!flight.visible) return;
+                        
+                        hasVisibleData = true;
+                        
+                        // Adicionar os segmentos de vídeo ao mapa
+                        flight.segments.forEach((segment, segmentIndex) => {
+                            // Desenhar linha para o segmento de vídeo
+                            const segmentCoords = segment.points.map(p => [p.lat, p.lng]);
+                            const polyline = L.polyline(segmentCoords, {
+                                color: flight.color,
+                                weight: 6,
+                                opacity: 0.8
+                            }).addTo(map);
+                            
+                            // Expandir os bounds para incluir este segmento
+                            segment.points.forEach(point => {
+                                bounds.extend([point.lat, point.lng]);
+                            });
+                            
+                            // Adicionar marcador de início do segmento
+                            if (segment.points.length > 0) {
+                                const startPoint = segment.points[0];
+                                const startMarker = L.circleMarker([startPoint.lat, startPoint.lng], {
+                                    radius: 8,
+                                    fillColor: flight.color,
+                                    color: '#000',
+                                    weight: 2,
+                                    opacity: 1,
+                                    fillOpacity: 0.9
+                                }).addTo(map);
+                                
+                                startMarker.bindPopup(`
+                                    <div style="min-width: 200px;">
+                                        <h4 style="margin: 0 0 10px 0; color: ${flight.color};">▶️ ${flight.name} - Início</h4>
+                                        <p style="margin: 5px 0;"><strong>Coordenadas:</strong> ${startPoint.lat.toFixed(6)}, ${startPoint.lng.toFixed(6)}</p>
+                                        <p style="margin: 5px 0;"><strong>Altitude:</strong> ${startPoint.altitude.toFixed(1)} pés</p>
+                                        <p style="margin: 5px 0;"><strong>Velocidade:</strong> ${startPoint.speed.toFixed(1)} mph</p>
+                                        ${startPoint.time ? `<p style="margin: 5px 0;"><strong>Horário:</strong> ${startPoint.time}</p>` : ''}
+                                    </div>
+                                `);
+                            }
+                        });
+                    });
+                    
+                    // Ajustar a visualização do mapa para mostrar todos os segmentos
+                    if (hasVisibleData) {
+                        map.fitBounds(bounds.pad(0.1));
+                    }
+                    
+                    // Atualizar a legenda
+                    updateLegend();
+                    
+                    // Mostrar o container do mapa
+                    document.getElementById('mapContainer').style.display = 'block';
+                    
+                    // Esconder o loading após um tempo (fallback)
+                    setTimeout(() => {
+                        mapLoading.style.display = 'none';
+                    }, 2000);
+                }, 100);
+            }
+            
+            function updateLegend() {
+                const legend = document.getElementById('mapLegend');
+                legend.innerHTML = '';
+                
+                allFlights.forEach(flight => {
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    
+                    legendItem.innerHTML = `
+                        <span class="legend-line" style="background-color: ${flight.color};"></span>
+                        <span>${flight.name}</span>
+                        <button class="btn-small toggle-flight" data-flight-id="${flight.id}" 
+                                style="margin-left: 10px; background: ${flight.visible ? '#4CAF50' : '#F44336'};">
+                            ${flight.visible ? 'Ocultar' : 'Mostrar'}
+                        </button>
+                    `;
+                    
+                    legend.appendChild(legendItem);
+                });
+                
+                // Adicionar event listeners aos botões de toggle
+                document.querySelectorAll('.toggle-flight').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const flightId = this.getAttribute('data-flight-id');
+                        toggleFlightVisibility(flightId);
+                    });
+                });
+            }
+            
+            function toggleFlightVisibility(flightId) {
+                const flight = allFlights.find(f => f.id === flightId);
+                if (flight) {
+                    flight.visible = !flight.visible;
+                    updateMap();
+                    updateStats();
+                }
+            }
+            
+            function updateStats() {
+                const visibleFlights = allFlights.filter(f => f.visible);
+                const totalSegments = visibleFlights.reduce((sum, flight) => sum + flight.segments.length, 0);
+                const totalPoints = visibleFlights.reduce((sum, flight) => sum + flight.videoPoints, 0);
+                const totalDistance = visibleFlights.reduce((sum, flight) => sum + flight.distance, 0);
+                
+                // Atualizar elementos da interface
+                document.getElementById('totalFlights').textContent = visibleFlights.length;
+                document.getElementById('totalSegments').textContent = totalSegments;
+                document.getElementById('totalPoints').textContent = totalPoints;
+                document.getElementById('totalDistance').textContent = (totalDistance / 1000).toFixed(2);
+                
+                // Mostrar estatísticas se houver voos
+                document.getElementById('stats').style.display = visibleFlights.length > 0 ? 'grid' : 'none';
+            }
+            
+            function updateFlightList() {
+                const flightList = document.getElementById('flightList');
+                const noFlightsMessage = document.getElementById('noFlightsMessage');
+                
+                if (allFlights.length === 0) {
+                    noFlightsMessage.style.display = 'block';
+                    flightList.innerHTML = '';
+                    actionButtons.style.display = 'none';
+                    return;
+                }
+                
+                noFlightsMessage.style.display = 'none';
+                flightList.innerHTML = '';
+                
+                allFlights.forEach(flight => {
+                    const flightItem = document.createElement('div');
+                    flightItem.className = 'flight-item';
+                    
+                    flightItem.innerHTML = `
+                        <div class="flight-color" style="background-color: ${flight.color};"></div>
+                        <div class="flight-name">${flight.name}</div>
+                        <div class="flight-stats">${flight.segments.length} segmentos</div>
+                        <div class="flight-actions">
+                            <button class="btn-small toggle-flight" data-flight-id="${flight.id}" 
+                                    style="background: ${flight.visible ? '#4CAF50' : '#F44336'};">
+                                ${flight.visible ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                            <button class="btn-small remove-flight" data-flight-id="${flight.id}" 
+                                    style="background: #F44336;">
+                                Remover
+                            </button>
+                        </div>
+                    `;
+                    
+                    flightList.appendChild(flightItem);
+                });
+                
+                // Adicionar event listeners aos botões
+                document.querySelectorAll('.toggle-flight').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const flightId = this.getAttribute('data-flight-id');
+                        toggleFlightVisibility(flightId);
+                    });
+                });
+                
+                document.querySelectorAll('.remove-flight').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const flightId = this.getAttribute('data-flight-id');
+                        removeFlight(flightId);
+                    });
+                });
+            }
+            
+            function removeFlight(flightId) {
+                allFlights = allFlights.filter(f => f.id !== flightId);
+                updateMap();
+                updateStats();
+                updateFlightList();
+                
+                if (allFlights.length === 0) {
+                    document.getElementById('mapContainer').style.display = 'none';
+                    document.getElementById('stats').style.display = 'none';
+                    actionButtons.style.display = 'none';
+                }
+            }
+            
+            function clearAllFlights() {
+                if (confirm('Tem certeza que deseja remover todos os voos?')) {
+                    allFlights = [];
+                    if (map) {
+                        map.remove();
+                        map = null;
+                    }
+                    updateStats();
+                    updateFlightList();
+                    document.getElementById('mapContainer').style.display = 'none';
+                    document.getElementById('stats').style.display = 'none';
+                    actionButtons.style.display = 'none';
+                    showSuccess('Todos os voos foram removidos.');
+                }
+            }
+            
+            function consolidateVideoData() {
+                if (allFlights.length === 0) {
+                    showError('Não há voos carregados para consolidar.');
+                    return;
+                }
+                
+                // Coletar todos os pontos com vídeo de todos os voos
+                let allVideoPoints = [];
+                
+                allFlights.forEach(flight => {
+                    // Filtrar apenas pontos com vídeo ativo
+                    const videoPoints = flight.points.filter(point => point.isVideo);
+                    
+                    // Adicionar identificador do voo a cada ponto
+                    const pointsWithFlightInfo = videoPoints.map(point => ({
+                        ...point,
+                        flightName: flight.name
+                    }));
+                    
+                    allVideoPoints = allVideoPoints.concat(pointsWithFlightInfo);
+                });
+                
+                if (allVideoPoints.length === 0) {
+                    showError('Nenhum ponto com vídeo encontrado para consolidar.');
+                    return;
+                }
+                
+                // Ordenar pontos por timestamp se disponível, caso contrário por ordem de processamento
+                if (allVideoPoints[0].time) {
+                    allVideoPoints.sort((a, b) => {
+                        if (a.time && b.time) {
+                            return new Date(a.time) - new Date(b.time);
+                        }
+                        return 0;
+                    });
+                }
+                
+                // Preparar dados para CSV
+                const csvData = allVideoPoints.map(point => {
+                    const row = {
+                        latitude: point.lat,
+                        longitude: point.lng,
+                        isVideo: point.isVideo,
+                        altitude: point.altitude,
+                        speed: point.speed,
+                        flight: point.flightName
+                    };
+                    
+                    // Adicionar timestamp se disponível
+                    if (point.time) {
+                        row.datetime = point.time;
+                    }
+                    
+                    return row;
+                });
+                
+                // Converter para CSV
+                const csvContent = Papa.unparse(csvData);
+                
+                // Criar e baixar o arquivo
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'dados_video_consolidados.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSuccess(`CSV consolidado gerado com ${allVideoPoints.length} pontos de vídeo!`);
+            }
+            
+            function loadExampleData() {
+                loading.style.display = 'block';
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                
+                // Dados de exemplo para Fernando de Noronha - Voo 1
+                const exampleData1 = [
+                    {latitude: -3.845617, longitude: -32.425712, isVideo: 1, altitude: 120, speed: 15, datetime: '2023-06-15 10:30:15'},
+                    {latitude: -3.845721, longitude: -32.425832, isVideo: 1, altitude: 125, speed: 16, datetime: '2023-06-15 10:30:20'},
+                    {latitude: -3.845832, longitude: -32.425945, isVideo: 0, altitude: 130, speed: 17, datetime: '2023-06-15 10:30:25'},
+                    {latitude: -3.845945, longitude: -32.426051, isVideo: 1, altitude: 128, speed: 16, datetime: '2023-06-15 10:30:30'},
+                    {latitude: -3.846112, longitude: -32.426215, isVideo: 1, altitude: 130, speed: 15, datetime: '2023-06-15 10:30:35'},
+                    {latitude: -3.846288, longitude: -32.426388, isVideo: 0, altitude: 132, speed: 16, datetime: '2023-06-15 10:30:40'},
+                    {latitude: -3.846452, longitude: -32.426572, isVideo: 1, altitude: 135, speed: 17, datetime: '2023-06-15 10:30:45'},
+                    {latitude: -3.846603, longitude: -32.426723, isVideo: 1, altitude: 130, speed: 16, datetime: '2023-06-15 10:30:50'},
+                    {latitude: -3.846754, longitude: -32.426874, isVideo: 1, altitude: 128, speed: 15, datetime: '2023-06-15 10:30:55'},
+                    {latitude: -3.846912, longitude: -32.427032, isVideo: 0, altitude: 125, speed: 14, datetime: '2023-06-15 10:31:00'}
+                ];
+                
+                // Dados de exemplo para Fernando de Noronha - Voo 2
+                const exampleData2 = [
+                    {latitude: -3.847100, longitude: -32.426500, isVideo: 1, altitude: 110, speed: 12, datetime: '2023-06-16 09:15:10'},
+                    {latitude: -3.847250, longitude: -32.426700, isVideo: 1, altitude: 115, speed: 13, datetime: '2023-06-16 09:15:15'},
+                    {latitude: -3.847400, longitude: -32.426900, isVideo: 1, altitude: 120, speed: 14, datetime: '2023-06-16 09:15:20'},
+                    {latitude: -3.847550, longitude: -32.427100, isVideo: 0, altitude: 125, speed: 15, datetime: '2023-06-16 09:15:25'},
+                    {latitude: -3.847700, longitude: -32.427300, isVideo: 1, altitude: 130, speed: 16, datetime: '2023-06-16 09:15:30'},
+                    {latitude: -3.847850, longitude: -32.427500, isVideo: 1, altitude: 135, speed: 17, datetime: '2023-06-16 09:15:35'},
+                    {latitude: -3.848000, longitude: -32.427700, isVideo: 1, altitude: 140, speed: 18, datetime: '2023-06-16 09:15:40'},
+                    {latitude: -3.848150, longitude: -32.427900, isVideo: 0, altitude: 145, speed: 19, datetime: '2023-06-16 09:15:45'},
+                    {latitude: -3.848300, longitude: -32.428100, isVideo: 1, altitude: 150, speed: 20, datetime: '2023-06-16 09:15:50'},
+                    {latitude: -3.848450, longitude: -32.428300, isVideo: 1, altitude: 155, speed: 21, datetime: '2023-06-16 09:15:55'}
+                ];
+                
+                // Processar os dados de exemplo
+                processFlightData(exampleData1, "Voo_Exemplo_1.csv");
+                processFlightData(exampleData2, "Voo_Exemplo_2.csv");
+                
+                loading.style.display = 'none';
+                updateMap();
+                updateStats();
+                updateFlightList();
+                actionButtons.style.display = 'flex';
+                showSuccess('Dados de exemplo carregados com sucesso!');
+            }
+            
+            function calculateSegmentDistance(points) {
+                let distance = 0;
+                for (let i = 1; i < points.length; i++) {
+                    distance += calculateDistance(
+                        points[i-1].lat, points[i-1].lng,
+                        points[i].lat, points[i].lng
+                    );
+                }
+                return distance;
+            }
+            
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371000; // Raio da Terra em metros
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+        }
+    </script>
+</body>
+</html>
