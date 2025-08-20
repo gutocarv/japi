@@ -138,6 +138,10 @@
             background: linear-gradient(45deg, #673AB7, #512DA8);
         }
         
+        .btn-filter {
+            background: linear-gradient(45deg, #FF4081, #F50057);
+        }
+        
         .stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -171,7 +175,7 @@
             height: 500px;
             border-radius: 10px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            background: #2c3e50; /* Cor de fundo enquanto carrega */
+            background: #2c3e50;
         }
         
         .map-loading {
@@ -434,6 +438,58 @@
             margin-top: 15px;
             font-size: 0.9em;
         }
+        
+        .filter-panel {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-title {
+            color: #4CAF50;
+            margin-top: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        
+        .filter-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .filter-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .filter-info {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .filter-controls {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -472,6 +528,30 @@
                 
                 <div class="error" id="error"></div>
                 <div class="success" id="success"></div>
+                
+                <div class="filter-panel" id="filterPanel" style="display: none;">
+                    <h3 class="filter-title">⏰ Filtro por Horário UTC</h3>
+                    <div class="filter-controls">
+                        <div>
+                            <label for="startTime">Horário Inicial (UTC):</label>
+                            <input type="time" id="startTime" class="filter-input" step="1">
+                        </div>
+                        <div>
+                            <label for="endTime">Horário Final (UTC):</label>
+                            <input type="time" id="endTime" class="filter-input" step="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-filter" id="applyFilter">
+                        Aplicar Filtro
+                    </button>
+                    <button class="btn btn-secondary" id="clearFilter" style="margin-left: 10px;">
+                        Limpar Filtro
+                    </button>
+                    <div class="filter-info">
+                        <p>💡 Apenas pontos com vídeo ativo dentro do intervalo de tempo serão exibidos.</p>
+                        <p>📊 Pontos filtrados: <span id="filteredPoints">0</span> de <span id="totalPointsCount">0</span></p>
+                    </div>
+                </div>
                 
                 <div class="stats" id="stats" style="display: none;">
                     <div class="stat-card">
@@ -517,18 +597,18 @@
                         <li><strong>isVideo</strong> - Indicador se o vídeo estava gravando (0 ou 1)</li>
                         <li><strong>altitude</strong> - Altitude em pés</li>
                         <li><strong>speed</strong> - Velocidade em mph</li>
-                        <li><strong>datetime</strong> - Data e hora (opcional)</li>
+                        <li><strong>datetime</strong> - Data e hora (opcional, formato UTC)</li>
                     </ul>
                 </div>
                 
                 <div class="info-box">
                     <h3>Exemplo de CSV</h3>
                     <div class="example-csv">
-                        latitude,longitude,isVideo,altitude,speed<br>
-                        -3.845617,-32.425712,1,120,15<br>
-                        -3.845721,-32.425832,1,125,16<br>
-                        -3.845832,-32.425945,0,130,17<br>
-                        -3.845945,-32.426051,1,128,16
+                        latitude,longitude,isVideo,altitude,speed,datetime<br>
+                        -3.845617,-32.425712,1,120,15,2023-06-15 10:30:15<br>
+                        -3.845721,-32.425832,1,125,16,2023-06-15 10:30:20<br>
+                        -3.845832,-32.425945,0,130,17,2023-06-15 10:30:25<br>
+                        -3.845945,-32.426051,1,128,16,2023-06-15 10:30:30
                     </div>
                     <button class="btn btn-small" id="downloadExample">Download CSV Exemplo</button>
                 </div>
@@ -577,6 +657,8 @@
         // Variáveis globais
         let map;
         let allFlights = [];
+        let filteredFlights = [];
+        let currentFilter = { startTime: null, endTime: null };
         const colorPalette = [
             '#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', 
             '#00BCD4', '#FFEB3B', '#FF5722', '#795548', '#607D8B',
@@ -649,6 +731,11 @@
             const refreshMapBtn = document.getElementById('refreshMap');
             const clearAllBtn = document.getElementById('clearAll');
             const actionButtons = document.getElementById('actionButtons');
+            const filterPanel = document.getElementById('filterPanel');
+            const applyFilterBtn = document.getElementById('applyFilter');
+            const clearFilterBtn = document.getElementById('clearFilter');
+            const startTimeInput = document.getElementById('startTime');
+            const endTimeInput = document.getElementById('endTime');
             
             // Configurar drag and drop
             uploadArea.addEventListener('dragover', (e) => {
@@ -684,6 +771,8 @@
             consolidateBtn.addEventListener('click', consolidateVideoData);
             refreshMapBtn.addEventListener('click', refreshMapView);
             clearAllBtn.addEventListener('click', clearAllFlights);
+            applyFilterBtn.addEventListener('click', applyTimeFilter);
+            clearFilterBtn.addEventListener('click', clearTimeFilter);
             
             // Adicionar listener para redimensionamento da janela
             window.addEventListener('resize', function() {
@@ -696,7 +785,7 @@
             });
             
             downloadExampleBtn.addEventListener('click', function() {
-                const exampleContent = "latitude,longitude,isVideo,altitude,speed\n-3.845617,-32.425712,1,120,15\n-3.845721,-32.425832,1,125,16\n-3.845832,-32.425945,0,130,17\n-3.845945,-32.426051,1,128,16\n-3.846112,-32.426215,1,130,15\n-3.846288,-32.426388,0,132,16\n-3.846452,-32.426572,1,135,17\n-3.846603,-32.426723,1,130,16\n-3.846754,-32.426874,1,128,15\n-3.846912,-32.427032,0,125,14";
+                const exampleContent = "latitude,longitude,isVideo,altitude,speed,datetime\n-3.845617,-32.425712,1,120,15,2023-06-15 10:30:15\n-3.845721,-32.425832,1,125,16,2023-06-15 10:30:20\n-3.845832,-32.425945,0,130,17,2023-06-15 10:30:25\n-3.845945,-32.426051,1,128,16,2023-06-15 10:30:30\n-3.846112,-32.426215,1,130,15,2023-06-15 10:30:35\n-3.846288,-32.426388,0,132,16,2023-06-15 10:30:40\n-3.846452,-32.426572,1,135,17,2023-06-15 10:30:45\n-3.846603,-32.426723,1,130,16,2023-06-15 10:30:50\n-3.846754,-32.426874,1,128,15,2023-06-15 10:30:55\n-3.846912,-32.427032,0,125,14,2023-06-15 10:31:00";
                 
                 const blob = new Blob([exampleContent], { type: 'text/csv' });
                 const url = URL.createObjectURL(blob);
@@ -753,6 +842,7 @@
                                 updateFlightList();
                                 showSuccess(`${csvFiles.length} voo(s) processado(s) com sucesso!`);
                                 actionButtons.style.display = 'flex';
+                                filterPanel.style.display = 'block';
                             }
                         },
                         error: function(error) {
@@ -767,6 +857,7 @@
                                     updateFlightList();
                                     showSuccess('Alguns voos foram processados com sucesso!');
                                     actionButtons.style.display = 'flex';
+                                    filterPanel.style.display = 'block';
                                 } else {
                                     showError('Nenhum voo foi processado com sucesso.');
                                 }
@@ -882,6 +973,116 @@
                 return segments;
             }
             
+            function applyTimeFilter() {
+                const startTime = startTimeInput.value;
+                const endTime = endTimeInput.value;
+                
+                if (!startTime && !endTime) {
+                    showError('Por favor, informe pelo menos um horário para filtrar.');
+                    return;
+                }
+                
+                if (startTime && endTime && startTime >= endTime) {
+                    showError('O horário inicial deve ser anterior ao horário final.');
+                    return;
+                }
+                
+                currentFilter.startTime = startTime;
+                currentFilter.endTime = endTime;
+                
+                // Aplicar filtro
+                filterFlightsByTime();
+                updateMap();
+                updateStats();
+                updateFilterInfo();
+                
+                showSuccess(`Filtro aplicado: ${startTime || 'Qualquer'} - ${endTime || 'Qualquer'}`);
+            }
+            
+            function clearTimeFilter() {
+                startTimeInput.value = '';
+                endTimeInput.value = '';
+                currentFilter.startTime = null;
+                currentFilter.endTime = null;
+                
+                // Restaurar todos os voos
+                filteredFlights = [...allFlights];
+                updateMap();
+                updateStats();
+                updateFilterInfo();
+                
+                showSuccess('Filtro removido. Todos os dados estão sendo exibidos.');
+            }
+            
+            function filterFlightsByTime() {
+                filteredFlights = [];
+                
+                allFlights.forEach(flight => {
+                    const filteredPoints = flight.points.filter(point => {
+                        if (!point.isVideo) return false;
+                        if (!point.time) return true; // Se não tem timestamp, mantém (ou remove conforme necessidade)
+                        
+                        // Extrair apenas o horário do timestamp
+                        const pointTime = extractTimeFromTimestamp(point.time);
+                        
+                        // Verificar se está dentro do intervalo de filtro
+                        if (currentFilter.startTime && pointTime < currentFilter.startTime) return false;
+                        if (currentFilter.endTime && pointTime > currentFilter.endTime) return false;
+                        
+                        return true;
+                    });
+                    
+                    if (filteredPoints.length > 0) {
+                        // Recriar segmentos de vídeo com os pontos filtrados
+                        const filteredSegments = identifyVideoSegments(filteredPoints);
+                        
+                        // Calcular estatísticas do voo filtrado
+                        const videoPointsCount = filteredPoints.filter(p => p.isVideo).length;
+                        const flightDistance = filteredSegments.reduce((total, segment) => 
+                            total + calculateSegmentDistance(segment.points), 0);
+                        
+                        // Adicionar voo filtrado
+                        const filteredFlight = {
+                            ...flight,
+                            points: filteredPoints,
+                            segments: filteredSegments,
+                            videoPoints: videoPointsCount,
+                            distance: flightDistance
+                        };
+                        
+                        filteredFlights.push(filteredFlight);
+                    }
+                });
+            }
+            
+            function extractTimeFromTimestamp(timestamp) {
+                // Extrai o horário de um timestamp no formato "YYYY-MM-DD HH:MM:SS"
+                if (!timestamp) return null;
+                
+                // Tenta diferentes formatos de data
+                const date = new Date(timestamp);
+                if (!isNaN(date.getTime())) {
+                    // É uma data válida, extrai o horário
+                    return date.toTimeString().split(' ')[0].substring(0, 8);
+                }
+                
+                // Se não for um formato de data reconhecido, tenta extrair manualmente
+                const timeMatch = timestamp.match(/(\d{2}:\d{2}:\d{2})/);
+                if (timeMatch) {
+                    return timeMatch[1];
+                }
+                
+                return null;
+            }
+            
+            function updateFilterInfo() {
+                const totalPoints = allFlights.reduce((sum, flight) => sum + flight.videoPoints, 0);
+                const filteredPoints = filteredFlights.reduce((sum, flight) => sum + flight.videoPoints, 0);
+                
+                document.getElementById('filteredPoints').textContent = filteredPoints;
+                document.getElementById('totalPointsCount').textContent = totalPoints;
+            }
+            
             function updateMap() {
                 // Mostrar indicador de carregamento
                 const mapLoading = document.getElementById('mapLoading');
@@ -979,11 +1180,14 @@
                         });
                     }
                     
+                    // Determinar quais voos usar (filtrados ou todos)
+                    const flightsToDisplay = currentFilter.startTime || currentFilter.endTime ? filteredFlights : allFlights;
+                    
                     // Adicionar cada voo ao mapa
                     const bounds = L.latLngBounds();
                     let hasVisibleData = false;
                     
-                    allFlights.forEach((flight, flightIndex) => {
+                    flightsToDisplay.forEach((flight, flightIndex) => {
                         if (!flight.visible) return;
                         
                         hasVisibleData = true;
@@ -1015,13 +1219,19 @@
                                     fillOpacity: 0.9
                                 }).addTo(map);
                                 
+                                let timeInfo = '';
+                                if (startPoint.time) {
+                                    const pointTime = extractTimeFromTimestamp(startPoint.time);
+                                    timeInfo = `<p style="margin: 5px 0;"><strong>Horário (UTC):</strong> ${pointTime || startPoint.time}</p>`;
+                                }
+                                
                                 startMarker.bindPopup(`
                                     <div style="min-width: 200px;">
                                         <h4 style="margin: 0 0 10px 0; color: ${flight.color};">▶️ ${flight.name} - Início</h4>
                                         <p style="margin: 5px 0;"><strong>Coordenadas:</strong> ${startPoint.lat.toFixed(6)}, ${startPoint.lng.toFixed(6)}</p>
                                         <p style="margin: 5px 0;"><strong>Altitude:</strong> ${startPoint.altitude.toFixed(1)} pés</p>
                                         <p style="margin: 5px 0;"><strong>Velocidade:</strong> ${startPoint.speed.toFixed(1)} mph</p>
-                                        ${startPoint.time ? `<p style="margin: 5px 0;"><strong>Horário:</strong> ${startPoint.time}</p>` : ''}
+                                        ${timeInfo}
                                     </div>
                                 `);
                             }
@@ -1039,7 +1249,7 @@
                     }, 300);
                     
                     // Atualizar a legenda
-                    updateLegend();
+                    updateLegend(flightsToDisplay);
                     
                     // Mostrar o container do mapa
                     document.getElementById('mapContainer').style.display = 'block';
@@ -1067,11 +1277,11 @@
                 }
             }
             
-            function updateLegend() {
+            function updateLegend(flightsToDisplay) {
                 const legend = document.getElementById('mapLegend');
                 legend.innerHTML = '';
                 
-                allFlights.forEach(flight => {
+                flightsToDisplay.forEach(flight => {
                     const legendItem = document.createElement('div');
                     legendItem.className = 'legend-item';
                     
@@ -1106,7 +1316,10 @@
             }
             
             function updateStats() {
-                const visibleFlights = allFlights.filter(f => f.visible);
+                // Determinar quais voos usar (filtrados ou todos)
+                const flightsToUse = currentFilter.startTime || currentFilter.endTime ? filteredFlights : allFlights;
+                const visibleFlights = flightsToUse.filter(f => f.visible);
+                
                 const totalSegments = visibleFlights.reduce((sum, flight) => sum + flight.segments.length, 0);
                 const totalPoints = visibleFlights.reduce((sum, flight) => sum + flight.videoPoints, 0);
                 const totalDistance = visibleFlights.reduce((sum, flight) => sum + flight.distance, 0);
@@ -1119,6 +1332,9 @@
                 
                 // Mostrar estatísticas se houver voos
                 document.getElementById('stats').style.display = visibleFlights.length > 0 ? 'grid' : 'none';
+                
+                // Atualizar informações do filtro
+                updateFilterInfo();
             }
             
             function updateFlightList() {
@@ -1176,6 +1392,7 @@
             
             function removeFlight(flightId) {
                 allFlights = allFlights.filter(f => f.id !== flightId);
+                filteredFlights = filteredFlights.filter(f => f.id !== flightId);
                 updateMap();
                 updateStats();
                 updateFlightList();
@@ -1184,12 +1401,14 @@
                     document.getElementById('mapContainer').style.display = 'none';
                     document.getElementById('stats').style.display = 'none';
                     actionButtons.style.display = 'none';
+                    document.getElementById('filterPanel').style.display = 'none';
                 }
             }
             
             function clearAllFlights() {
                 if (confirm('Tem certeza que deseja remover todos os voos?')) {
                     allFlights = [];
+                    filteredFlights = [];
                     if (map) {
                         map.remove();
                         map = null;
@@ -1199,12 +1418,15 @@
                     document.getElementById('mapContainer').style.display = 'none';
                     document.getElementById('stats').style.display = 'none';
                     actionButtons.style.display = 'none';
+                    document.getElementById('filterPanel').style.display = 'none';
                     showSuccess('Todos os voos foram removidos.');
                 }
             }
             
             function consolidateVideoData() {
-                if (allFlights.length === 0) {
+                const flightsToUse = currentFilter.startTime || currentFilter.endTime ? filteredFlights : allFlights;
+                
+                if (flightsToUse.length === 0) {
                     showError('Não há voos carregados para consolidar.');
                     return;
                 }
@@ -1212,7 +1434,7 @@
                 // Coletar todos os pontos com vídeo de todos os voos
                 let allVideoPoints = [];
                 
-                allFlights.forEach(flight => {
+                flightsToUse.forEach(flight => {
                     // Filtrar apenas pontos com vídeo ativo
                     const videoPoints = flight.points.filter(point => point.isVideo);
                     
@@ -1318,6 +1540,7 @@
                 updateStats();
                 updateFlightList();
                 actionButtons.style.display = 'flex';
+                document.getElementById('filterPanel').style.display = 'block';
                 showSuccess('Dados de exemplo carregados com sucesso!');
             }
             
