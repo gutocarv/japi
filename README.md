@@ -22,3 +22,8 @@ aqui tem o protótipo do sistema de triangulação usando drone <https://gutocar
 Aqui os dados são enviados a partir da localização e orientação, 
 ou seja o usuário observa sinais de fumaça, bate uma foto e envia as coordenadas do ponto bem como a orientação magnética (bússola) 
 
+3- **Mapeador Multi-Voo** <https://gutocarv.github.io/japi/noron_tub_detect_consolidator2.html>
+
+Mapeador Multi-Voo -  Analise múltiplos voos de drone DJI e identifique os trechos onde o video estv sendo gravado Este sistema analisa múltiplos arquivos CSV gerados por drones DJI durante voos, mapeando pontos onde houve gravação de vídeo.
+Cada voo é representado por uma cor diferente no mapa.
+O sistem pode gerar uma planilha consolidada com todos os video-segmento dos diferentes voos 
