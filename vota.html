@@ -369,12 +369,27 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
-            gapi.load('client:auth2', initializeGapi);
             setupEventListeners();
+            
+            // Aguardar carregamento da API do Google
+            if (typeof gapi !== 'undefined') {
+                gapi.load('client:auth2', initializeGapi);
+            } else {
+                console.log('GAPI não carregou, tentando novamente...');
+                setTimeout(() => {
+                    if (typeof gapi !== 'undefined') {
+                        gapi.load('client:auth2', initializeGapi);
+                    } else {
+                        showDebugInfo();
+                    }
+                }, 2000);
+            }
         });
 
         async function initializeGapi() {
             try {
+                console.log('Inicializando Google API...');
+                
                 await gapi.client.init({
                     apiKey: API_KEY,
                     clientId: CLIENT_ID,
@@ -383,47 +398,76 @@
                 });
                 
                 gapiInitialized = true;
-                console.log('Google API inicializada com sucesso');
+                console.log('✅ Google API inicializada com sucesso');
+                
+                // Atualizar interface para mostrar que está pronto
+                updateLoginButton('Pronto para login!');
                 
                 // Verificar se já está logado
                 const authInstance = gapi.auth2.getAuthInstance();
                 if (authInstance.isSignedIn.get()) {
+                    console.log('Usuário já logado, carregando dados...');
                     handleAuthSuccess();
                 }
             } catch (error) {
-                console.error('Erro ao inicializar Google API:', error);
-                // Fallback para modo de demonstração
-                loadDemoData();
+                console.error('❌ Erro ao inicializar Google API:', error);
+                gapiInitialized = false;
+                
+                // Mostrar modo demo para testar interface
+                updateLoginButton('Erro na API - Modo Demo');
+                document.getElementById('loginBtn').onclick = startDemoMode;
             }
         }
 
-        function loadDemoData() {
-            // Dados de exemplo baseados na sua planilha real
-            photos = [
-                {
-                    id: 'Idibw001',
-                    participante: 'Antonio Amaral',
-                    titulo: 'Casal de papa formigas de grota',
-                    especie: 'Myrmoderus squamosus papa formiga de grota',
-                    link: 'https://drive.google.com/uc?id=1Y4G-aSzeROiqXGf3Rw8rhWezWV5VYdmF'
-                },
-                {
-                    id: 'Idibw002',
-                    participante: 'Arlaine dos Santos Francisco',
-                    titulo: 'Saíra-ferrugem',
-                    especie: 'Saíra-ferrugem',
-                    link: 'https://drive.google.com/uc?id=1L9zfWqg3sGHfl17dNeYfyqTRYcPy2NWd'
-                },
-                {
-                    id: 'Idibw003',
-                    participante: 'Bia Carvalho',
-                    titulo: 'dasds',
-                    especie: 'dsaas',
-                    link: 'https://drive.google.com/uc?id=1U0eva3lWK4gnLk8OkFGoCI82WV-sdpC4'
-                }
-            ];
+        function updateLoginButton(text) {
+            const btn = document.getElementById('loginBtn');
+            if (btn) {
+                btn.innerHTML = `<span>📧</span> ${text}`;
+            }
+        }
+
+        function startDemoMode() {
+            alert('Modo demonstração - usando dados de exemplo');
             
-            console.log('Modo demonstração carregado com', photos.length, 'fotos');
+            // Simular usuário logado para teste
+            currentUser = {
+                name: "Teste Jurado",
+                email: "kacauoliveirafotos@gmail.com",
+                juradoInfo: JURADOS_AUTORIZADOS['kacauoliveirafotos@gmail.com']
+            };
+            
+            loadDemoData();
+            showVotingInterface();
+        }
+
+        function showDebugInfo() {
+            document.getElementById('loginSection').innerHTML = `
+                <h2>🔧 Debug - Sistema de Votação</h2>
+                <div style="text-align: left; background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Status da API Google:</strong> ${typeof gapi !== 'undefined' ? '✅ Carregada' : '❌ Não carregada'}</p>
+                    <p><strong>GAPI Inicializada:</strong> ${gapiInitialized ? '✅ Sim' : '❌ Não'}</p>
+                    <p><strong>Domínio atual:</strong> ${window.location.origin}</p>
+                    <p><strong>Planilha ID:</strong> ${SHEET_ID}</p>
+                </div>
+                
+                <button onclick="startDemoMode()" class="login-btn" style="background: #orange;">
+                    🧪 Testar Interface (Modo Demo)
+                </button>
+                
+                <button onclick="location.reload()" class="login-btn" style="background: #666; margin-top: 10px;">
+                    🔄 Recarregar Página
+                </button>
+                
+                <div style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                    <p><strong>Possíveis soluções:</strong></p>
+                    <ul style="text-align: left; margin-top: 10px;">
+                        <li>Verificar se domínio está autorizado no Google Cloud Console</li>
+                        <li>Aguardar alguns minutos para propagação das configurações</li>
+                        <li>Testar em aba anônima</li>
+                        <li>Verificar console do navegador (F12)</li>
+                    </ul>
+                </div>
+            `;
         }
 
         function setupEventListeners() {
