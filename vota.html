@@ -3,65 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Triangulação Serra do Japi</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Votação - Concurso Fotográfico</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gapi/2.0.0/gapi.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
+            box-sizing: border-box;
         }
-        .container {
-            display: flex;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            color: #333;
         }
-        .sidebar {
-            width: 300px;
-            background-color: #2c3e50;
-            color: white;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
-            overflow-y: auto;
         }
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        #map {
-            flex: 1;
-            height: 100vh;
-        }
-        .menu-title {
+
+        .header {
             text-align: center;
-            padding: 10px;
-            background-color: #34495e;
-            margin-bottom: 20px;
-            border-radius: 5px;
+            color: white;
+            margin-bottom: 30px;
         }
-        .menu-option {
-            padding: 12px;
+
+        .header h1 {
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            background-color: #34495e;
-            border-radius: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .login-section {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .voting-interface {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .photo-card {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .photo-info {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .photo-details h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .photo-details p {
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .photo-container {
+            text-align: center;
+        }
+
+        .photo-container img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: transform 0.2s ease;
         }
-        .menu-option:hover {
-            background-color: #3d566e;
+
+        .photo-container img:hover {
+            transform: scale(1.02);
         }
-        .menu-option i {
-            margin-right: 10px;
-            width: 20px;
+
+        .rating-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .rating-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .rating-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .rating-btn {
+            width: 60px;
+            height: 60px;
+            border: 3px solid #ddd;
+            background: white;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rating-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .rating-btn.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            transition: transform 0.2s ease;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: #5a6fd8;
+        }
+
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .summary {
+            background: #e8f5e8;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
             text-align: center;
         }
-        .status-bar {
-            padding: 10px;
-            background-color: #34495e;
-            text-align: center;
-            font-size: 14px;
+
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s ease;
         }
+
+        .login-btn:hover {
+            background: #3367d6;
+        }
+
+        .user-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -70,1198 +251,581 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.7);
+            background-color: rgba(0,0,0,0.9);
+            cursor: pointer;
         }
+
         .modal-content {
-            background-color: #f4f4f4;
-            margin: 10% auto;
-            padding: 20px;
-            width: 80%;
-            max-width: 600px;
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .close-btn {
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
+            margin: auto;
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 5%;
         }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn {
-            padding: 10px 15px;
-            background-color: #3498db;
+
+        .save-status.info {
+            background: #2196F3;
             color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
         }
-        .btn:hover {
-            background-color: #2980b9;
+
+        .save-status.success {
+            background: #4CAF50;
+            color: white;
         }
-        .btn-secondary {
-            background-color: #7f8c8d;
+
+        .save-status.error {
+            background: #f44336;
+            color: white;
         }
-        .btn-secondary:hover {
-            background-color: #6c7a7d;
-        }
-        .data-display {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            background-color: white;
-        }
-        .data-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .data-item:last-child {
-            border-bottom: none;
-        }
-        .legend {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 1000;
-            background-color: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            border-radius: 50%;
-        }
-        .info-box {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background-color: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            max-width: 300px;
-            max-height: 80vh;
-            overflow-y: auto;
+
+        @media (max-width: 768px) {
+            .photo-info {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .rating-buttons {
+                gap: 10px;
+            }
+            
+            .rating-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
-            <div class="menu-title">
-                <h2>🎯 SISTEMA DE TRIANGULAÇÃO MELHORADO</h2>
-                <p>V2.0</p>
+        <div class="header">
+            <h1>🏆 Concurso Fotográfico</h1>
+            <p>Sistema de Votação para Jurados</p>
+        </div>
+
+        <!-- Seção de Login -->
+        <div id="loginSection" class="login-section">
+            <h2>Acesso para Jurados</h2>
+            <p style="margin: 20px 0;">Entre com sua conta Google para começar a votação</p>
+            <button id="loginBtn" class="login-btn">
+                <span>📧</span>
+                Entrar com Google
+            </button>
+        </div>
+
+        <!-- Interface de Votação -->
+        <div id="votingInterface" class="voting-interface">
+            <div id="userInfo" class="user-info"></div>
+            
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
             </div>
             
-            <div class="menu-option" onclick="showAddPointModal()">
-                <i class="fas fa-plus"></i> Adicionar ponto com dados
-            </div>
-            <div class="menu-option" onclick="showViewDataModal()">
-                <i class="fas fa-table"></i> Visualizar todos os dados
-            </div>
-            <div class="menu-option" onclick="calculateTriangulation()">
-                <i class="fas fa-calculator"></i> Calcular triangulação
-            </div>
-            <div class="menu-option" onclick="generateMap()">
-                <i class="fas fa-map"></i> Gerar mapa interativo
-            </div>
-            <div class="menu-option" onclick="saveData()">
-                <i class="fas fa-save"></i> Salvar dados
-            </div>
-            <div class="menu-option" onclick="loadData()">
-                <i class="fas fa-folder-open"></i> Carregar dados
-            </div>
-            <div class="menu-option" onclick="clearData()">
-                <i class="fas fa-trash"></i> Limpar todos os dados
-            </div>
-            <div class="menu-option" onclick="exitSystem()">
-                <i class="fas fa-sign-out-alt"></i> Sair
+            <div id="photoCard" class="photo-card">
+                <!-- Conteúdo da foto será inserido aqui -->
             </div>
             
-            <div class="status-bar" id="statusBar">
-                📊 Status: 0 pontos | 0 intersecções
+            <div class="navigation">
+                <button id="prevBtn" class="nav-btn">← Anterior</button>
+                <span id="photoCounter">1 / 200</span>
+                <button id="nextBtn" class="nav-btn">Próxima →</button>
             </div>
-        </div>
-        
-        <div class="main-content">
-            <div id="map"></div>
-        </div>
-    </div>
-    
-    <!-- Modal para adicionar ponto -->
-    <div id="addPointModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>➕ ADICIONAR PONTO COMPLETO</h2>
-                <span class="close-btn" onclick="closeModal('addPointModal')">&times;</span>
-            </div>
-            <div class="form-group">
-                <label for="pointName">📍 Nome do ponto de observação:</label>
-                <input type="text" id="pointName" placeholder="Ex: Ponto_Norte">
-            </div>
-            <div class="form-group">
-                <label for="pointLat">🌐 Latitude (ex: -23.5505):</label>
-                <input type="number" id="pointLat" step="0.000001" placeholder="-23.5505">
-            </div>
-            <div class="form-group">
-                <label for="pointLon">🌐 Longitude (ex: -46.6333):</label>
-                <input type="number" id="pointLon" step="0.000001" placeholder="-46.6333">
-            </div>
-            <div class="form-group">
-                <label for="pointAzimuth">🧭 Azimute em graus (0-360):</label>
-                <input type="number" id="pointAzimuth" min="0" max="360" step="0.1" placeholder="45.0">
-                <small id="azimuthDirection">Direção: -</small>
-            </div>
-            <div class="form-group">
-                <label for="pointTarget">🎯 Nome do alvo observado (opcional):</label>
-                <input type="text" id="pointTarget" placeholder="Ex: Torre_Central">
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="useDistance"> 📏 Informar distância estimada?
-                </label>
-                <input type="number" id="pointDistance" step="1" placeholder="Metros" style="display: none; margin-top: 5px;">
-            </div>
-            <div style="text-align: right;">
-                <button class="btn" onclick="addPoint()">Adicionar Ponto</button>
-                <button class="btn btn-secondary" onclick="closeModal('addPointModal')">Cancelar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para visualizar dados -->
-    <div id="viewDataModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📊 TODOS OS DADOS INSERIDOS</h2>
-                <span class="close-btn" onclick="closeModal('viewDataModal')">&times;</span>
-            </div>
-            <div id="pointsData" class="data-display">
-                <!-- Dados serão inseridos aqui via JavaScript -->
-            </div>
-            <div id="intersectionsData" class="data-display" style="display: none;">
-                <!-- Intersecções serão inseridas aqui via JavaScript -->
-            </div>
-            <div style="text-align: right;">
-                <button class="btn btn-secondary" onclick="closeModal('viewDataModal')">Fechar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para carregar dados -->
-    <div id="loadDataModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📂 CARREGAR DADOS</h2>
-                <span class="close-btn" onclick="closeModal('loadDataModal')">&times;</span>
-            </div>
-            <div class="form-group">
-                <label for="dataFile">Selecione um arquivo JSON:</label>
-                <input type="file" id="dataFile" accept=".json">
-            </div>
-            <div style="text-align: right;">
-                <button class="btn" onclick="loadDataFromFile()">Carregar</button>
-                <button class="btn btn-secondary" onclick="closeModal('loadDataModal')">Cancelar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal de confirmação -->
-    <div id="confirmModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="confirmTitle">Confirmação</h2>
-                <span class="close-btn" onclick="closeModal('confirmModal')">&times;</span>
-            </div>
-            <div id="confirmMessage">
-                <!-- Mensagem será inserida aqui via JavaScript -->
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button class="btn" id="confirmYesBtn">Sim</button>
-                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Não</button>
+            
+            <div id="summary" class="summary" style="display: none;">
+                <h3>🎉 Votação Concluída!</h3>
+                <p>Obrigado por participar da avaliação!</p>
+                <div id="summaryStats"></div>
             </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Modal para ampliar foto -->
+    <div id="photoModal" class="modal">
+        <img id="modalImage" class="modal-content">
+    </div>
+
     <script>
-        // Sistema de Triangulação Melhorado
-        class SistemaTriangulacaoMelhorado {
-            constructor() {
-                this.pontos_dados = [];  // Unifica pontos + azimutes
-                this.interseccoes = [];
-                this.map = null;
-                this.currentMarkers = [];
-                this.currentLines = [];
+        // Configurações do Google Sheets API
+        const SHEET_ID = '1kBTwVXA1-uMt0Doh0fHqdVzuv4qnEbasxn3Ke0mxiow';
+        const CLIENT_ID = '79879110934-bco496812b08vkorealkith5a5hi2ia2.apps.googleusercontent.com';
+        const API_KEY = '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';
+        const DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly';
+
+        // Estado da aplicação
+        let currentUser = null;
+        let photos = [];
+        let currentPhotoIndex = 0;
+        let votes = {};
+        let gapiInitialized = false;
+
+        // Configuração dos jurados autorizados
+        const JURADOS_AUTORIZADOS = {
+            'kacauoliveirafotos@gmail.com': { coluna: 'F', nome: 'Jurado 1' },
+            'avistarconecta@gmail.com': { coluna: 'G', nome: 'Jurado 2' },
+            'projetos.turismo@ilhabela.sp.gov.br': { coluna: 'H', nome: 'Jurado 3' },
+            'zeedoo@gmail.com': { coluna: 'I', nome: 'Jurado 4' }
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            gapi.load('client:auth2', initializeGapi);
+            setupEventListeners();
+        });
+
+        async function initializeGapi() {
+            try {
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    clientId: CLIENT_ID,
+                    discoveryDocs: DISCOVERY_DOCS,
+                    scope: SCOPES
+                });
                 
-                console.log("=".repeat(60));
-                console.log("🎯 SISTEMA DE TRIANGULAÇÃO MELHORADO - V2.0");
-                console.log("=".repeat(60));
+                gapiInitialized = true;
+                console.log('Google API inicializada com sucesso');
                 
-                this.initMap();
-                this.updateStatus();
-            }
-            
-            initMap() {
-                // Inicializa o mapa com vista para o Brasil
-                this.map = L.map('map').setView([-15.788497, -47.879873], 4);
-                
-                // Adiciona camada base do OpenStreetMap
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(this.map);
-                
-                // Adiciona legenda
-                this.addLegend();
-            }
-            
-            addLegend() {
-                const legend = L.control({position: 'bottomleft'});
-                
-                legend.onAdd = () => {
-                    const div = L.DomUtil.create('div', 'info legend');
-                    div.innerHTML = `
-                        <h4>📍 LEGENDA</h4>
-                        <p><i class="fas fa-camera" style="color:blue; margin-right:5px;"></i> Pontos de Observação</p>
-                        <p><i class="fas fa-map-marker" style="color:red; margin-right:5px;"></i> Intersecções</p>
-                        <p><span style="color:#666;">━ ━ ━</span> Azimutes</p>
-                        <p><span style="color:#000;">··········</span> Linhas de Triangulação</p>
-                        <hr>
-                        <p style="font-size:12px;">
-                        <b>AZIMUTES:</b><br>
-                        0° = Norte ↑<br>
-                        90° = Leste →<br>
-                        180° = Sul ↓<br>
-                        270° = Oeste ←
-                        </p>
-                    `;
-                    return div;
-                };
-                
-                legend.addTo(this.map);
-            }
-            
-            addInfoBox() {
-                // Remove a info box existente
-                const existingBox = document.querySelector('.info-box-container');
-                if (existingBox) {
-                    existingBox.remove();
+                // Verificar se já está logado
+                const authInstance = gapi.auth2.getAuthInstance();
+                if (authInstance.isSignedIn.get()) {
+                    handleAuthSuccess();
                 }
-                
-                if (this.pontos_dados.length === 0 && this.interseccoes.length === 0) {
-                    return;
-                }
-                
-                const infoBox = L.control({position: 'topright'});
-                
-                infoBox.onAdd = () => {
-                    const div = L.DomUtil.create('div', 'info-box-container');
-                    div.style.padding = '10px';
-                    div.style.backgroundColor = 'white';
-                    div.style.borderRadius = '5px';
-                    div.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
-                    div.style.maxWidth = '300px';
-                    div.style.maxHeight = '80vh';
-                    div.style.overflowY = 'auto';
-                    
-                    let html = `<h4 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">📊 INFORMAÇÕES</h4>`;
-                    
-                    if (this.pontos_dados.length > 0) {
-                        html += `<h5 style="margin:10px 0 5px 0; color:#0066cc;">📍 PONTOS (${this.pontos_dados.length})</h5>`;
-                        this.pontos_dados.forEach(ponto => {
-                            html += `
-                                <div style="margin-bottom:8px; padding:5px; background-color:#f0f8ff; border-radius:3px;">
-                                    <b>${ponto.nome}</b><br>
-                                    <small>
-                                    • ${ponto.lat.toFixed(6)}, ${ponto.lon.toFixed(6)}<br>
-                                    • Az: ${ponto.azimute.toFixed(1)}° → ${ponto.alvo}<br>
-                                    ${ponto.distancia ? `• Dist: ${ponto.distancia}m<br>` : ''}
-                                    </small>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    if (this.interseccoes.length > 0) {
-                        html += `<h5 style="margin:15px 0 5px 0; color:#cc3300;">🎯 INTERSECÇÕES (${this.interseccoes.length})</h5>`;
-                        this.interseccoes.forEach(inter => {
-                            const bgColor = inter.tipo === 'mesmo_alvo' ? '#ffe6e6' : '#fff0e6';
-                            html += `
-                                <div style="margin-bottom:8px; padding:5px; background-color:${bgColor}; border-radius:3px;">
-                                    <b>${inter.nome}</b><br>
-                                    <small>
-                                    • ${inter.lat.toFixed(6)}, ${inter.lon.toFixed(6)}<br>
-                                    • Entre: ${inter.pontos_origem.join(' & ')}<br>
-                                    ${inter.precisao ? `• Precisão: ${inter.precisao.toFixed(1)}m<br>` : ''}
-                                    </small>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    html += `
-                        <hr style="margin:10px 0 5px 0;">
-                        <div style="text-align:center; font-size:11px; color:#666;">
-                        <b>Sistema de Triangulação v2.0</b><br>
-                        ${new Date().toLocaleString()}
-                        </div>
-                    `;
-                    
-                    div.innerHTML = html;
-                    return div;
-                };
-                
-                infoBox.addTo(this.map);
-            }
-            
-            adicionar_ponto_completo(nome, lat, lon, azimute, alvo, distancia) {
-                try {
-                    if (!nome) {
-                        alert("❌ Nome não pode estar vazio!");
-                        return false;
-                    }
-                    
-                    // Verifica se já existe
-                    if (this.pontos_dados.some(p => p.nome === nome)) {
-                        alert(`⚠️ Ponto '${nome}' já existe!`);
-                        return false;
-                    }
-                    
-                    // Validação de coordenadas
-                    if (!(-90 <= lat && lat <= 90)) {
-                        alert("❌ Latitude deve estar entre -90 e 90!");
-                        return false;
-                    }
-                    if (!(-180 <= lon && lon <= 180)) {
-                        alert("❌ Longitude deve estar entre -180 e 180!");
-                        return false;
-                    }
-                    
-                    // Validação de azimute
-                    if (!(0 <= azimute && azimute <= 360)) {
-                        alert("❌ Azimute deve estar entre 0 e 360!");
-                        return false;
-                    }
-                    
-                    // Se não informou alvo, cria um padrão
-                    if (!alvo) {
-                        alvo = `Alvo_${this.pontos_dados.length + 1}`;
-                    }
-                    
-                    // Cria objeto completo
-                    const ponto_completo = {
-                        nome: nome,
-                        lat: lat,
-                        lon: lon,
-                        azimute: azimute,
-                        alvo: alvo,
-                        distancia: distancia || null,
-                        timestamp: new Date().toLocaleString()
-                    };
-                    
-                    this.pontos_dados.push(ponto_completo);
-                    
-                    console.log(`✅ Ponto '${nome}' adicionado com sucesso!`);
-                    this.updateStatus();
-                    return true;
-                    
-                } catch (error) {
-                    console.error(`❌ Erro ao adicionar ponto: ${error}`);
-                    return false;
-                }
-            }
-            
-            validar_azimute(azimute) {
-                if (azimute === 0) return "Norte ↑";
-                if (azimute === 90) return "Leste →";
-                if (azimute === 180) return "Sul ↓";
-                if (azimute === 270) return "Oeste ←";
-                if (0 < azimute && azimute < 90) return "Nordeste ↗";
-                if (90 < azimute && azimute < 180) return "Sudeste ↘";
-                if (180 < azimute && azimute < 270) return "Sudoeste ↙";
-                if (270 < azimute && azimute < 360) return "Noroeste ↖";
-                return "Direção inválida";
-            }
-            
-            calcular_bearing(lat1, lon1, lat2, lon2) {
-                const lat1_rad = this.degToRad(lat1);
-                const lat2_rad = this.degToRad(lat2);
-                const dlon_rad = this.degToRad(lon2 - lon1);
-                
-                const y = Math.sin(dlon_rad) * Math.cos(lat2_rad);
-                const x = Math.cos(lat1_rad) * Math.sin(lat2_rad) - 
-                          Math.sin(lat1_rad) * Math.cos(lat2_rad) * Math.cos(dlon_rad);
-                
-                const bearing_rad = Math.atan2(y, x);
-                let bearing_deg = this.radToDeg(bearing_rad);
-                
-                // Normaliza para 0-360
-                return (bearing_deg + 360) % 360;
-            }
-            
-            degToRad(deg) {
-                return deg * (Math.PI / 180);
-            }
-            
-            radToDeg(rad) {
-                return rad * (180 / Math.PI);
-            }
-            
-            calcular_ponto_por_azimute(lat_origem, lon_origem, azimute, distancia) {
-                // Converte para radianos
-                const lat1 = this.degToRad(lat_origem);
-                const lon1 = this.degToRad(lon_origem);
-                const bearing = this.degToRad(azimute);
-                
-                // Raio da Terra em metros
-                const R = 6371000;
-                
-                // Distância angular
-                const ang_dist = distancia / R;
-                
-                // Cálculo do novo ponto
-                const lat2 = Math.asin(Math.sin(lat1) * Math.cos(ang_dist) +
-                                     Math.cos(lat1) * Math.sin(ang_dist) * Math.cos(bearing));
-                
-                const lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(ang_dist) * Math.cos(lat1),
-                                             Math.cos(ang_dist) - Math.sin(lat1) * Math.sin(lat2));
-                
-                return [this.radToDeg(lat2), this.radToDeg(lon2)];
-            }
-            
-            interseccao_duas_linhas(ponto1, ponto2) {
-                try {
-                    // Converte coordenadas e azimutes para radianos
-                    const lat1_rad = this.degToRad(ponto1.lat);
-                    const lon1_rad = this.degToRad(ponto1.lon);
-                    const lat2_rad = this.degToRad(ponto2.lat);
-                    const lon2_rad = this.degToRad(ponto2.lon);
-                    
-                    const az1_rad = this.degToRad(ponto1.azimute);
-                    const az2_rad = this.degToRad(ponto2.azimute);
-                    
-                    // Ponto de referência (centro aproximado)
-                    const lat_ref = (ponto1.lat + ponto2.lat) / 2;
-                    const lon_ref = (ponto1.lon + ponto2.lon) / 2;
-                    
-                    // Converte para coordenadas locais (metros)
-                    const geoParaLocal = (lat, lon) => {
-                        const dlat = lat - lat_ref;
-                        const dlon = lon - lon_ref;
-                        // Fator de conversão aproximado
-                        const lat_to_m = 111320.0;  // metros por grau de latitude
-                        const lon_to_m = 111320.0 * Math.cos(this.degToRad(lat_ref));  // varia com latitude
-                        
-                        const x = dlon * lon_to_m;
-                        const y = dlat * lat_to_m;
-                        return {x, y};
-                    };
-                    
-                    // Converte pontos para coordenadas locais
-                    const p1_local = geoParaLocal(ponto1.lat, ponto1.lon);
-                    const p2_local = geoParaLocal(ponto2.lat, ponto2.lon);
-                    
-                    // Calcula vetores direcionais das linhas
-                    // Azimute 0° = Norte = vetor (0, 1)
-                    // Azimute 90° = Leste = vetor (1, 0)
-                    // Azimute 180° = Sul = vetor (0, -1)
-                    // Azimute 270° = Oeste = vetor (-1, 0)
-                    
-                    // Vetor direcional do azimute 1
-                    const dx1 = Math.sin(az1_rad);  // componente leste
-                    const dy1 = Math.cos(az1_rad);  // componente norte
-                    
-                    // Vetor direcional do azimute 2
-                    const dx2 = Math.sin(az2_rad);  // componente leste
-                    const dy2 = Math.cos(az2_rad);  // componente norte
-                    
-                    // Equação da linha 1: (x,y) = (x1,y1) + t1*(dx1,dy1)
-                    // Equação da linha 2: (x,y) = (x2,y2) + t2*(dx2,dy2)
-                    //
-                    // Intersecção: x1 + t1*dx1 = x2 + t2*dx2
-                    //             y1 + t1*dy1 = y2 + t2*dy2
-                    //
-                    // Sistema: t1*dx1 - t2*dx2 = x2 - x1
-                    //         t1*dy1 - t2*dy2 = y2 - y1
-                    
-                    const det = dx1 * dy2 - dy1 * dx2;  // determinante
-                    
-                    if (Math.abs(det) < 1e-10) {
-                        console.log("⚠️ Linhas paralelas no sistema local");
-                        return null;
-                    }
-                    
-                    // Resolve o sistema
-                    const dx = p2_local.x - p1_local.x;
-                    const dy = p2_local.y - p1_local.y;
-                    
-                    const t1 = (dx * dy2 - dy * dx2) / det;
-                    
-                    // Calcula ponto de intersecção em coordenadas locais
-                    const x_inter = p1_local.x + t1 * dx1;
-                    const y_inter = p1_local.y + t1 * dy1;
-                    
-                    // Converte de volta para lat/lon
-                    const dlat_inter = y_inter / 111320.0;
-                    const dlon_inter = x_inter / (111320.0 * Math.cos(this.degToRad(lat_ref)));
-                    
-                    const lat_inter = lat_ref + dlat_inter;
-                    const lon_inter = lon_ref + dlon_inter;
-                    
-                    // Validação: verifica se a intersecção está em uma direção razoável
-                    const dist1 = this.calcular_distancia(ponto1.lat, ponto1.lon, lat_inter, lon_inter);
-                    const dist2 = this.calcular_distancia(ponto2.lat, ponto2.lon, lat_inter, lon_inter);
-                    
-                    // Se a intersecção está muito longe, pode estar na direção oposta
-                    if (dist1 > 50000 || dist2 > 50000) {  // mais de 50km
-                        console.log(`⚠️ Intersecção muito distante: ${dist1}m e ${dist2}m`);
-                        return null;
-                    }
-                    
-                    return [lat_inter, lon_inter];
-                    
-                } catch (error) {
-                    console.error(`⚠️ Erro no cálculo de intersecção: ${error}`);
-                    return null;
-                }
-            }
-            
-            calcular_distancia(lat1, lon1, lat2, lon2) {
-                // Fórmula de Haversine para calcular distância entre dois pontos
-                const R = 6371000; // Raio da Terra em metros
-                const dLat = this.degToRad(lat2 - lat1);
-                const dLon = this.degToRad(lon2 - lon1);
-                
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                          Math.cos(this.degToRad(lat1)) * Math.cos(this.degToRad(lat2)) *
-                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                return R * c;
-            }
-            
-            calcular_triangulacao() {
-                console.log("🧮 CALCULANDO TRIANGULAÇÃO");
-                
-                if (this.pontos_dados.length < 2) {
-                    alert("❌ Necessário pelo menos 2 pontos para triangulação!");
-                    return;
-                }
-                
-                this.interseccoes = [];
-                let interseccoes_calculadas = 0;
-                
-                console.log(`📊 Processando ${this.pontos_dados.length} pontos...`);
-                
-                // Agrupa pontos por alvo
-                const alvos_grupos = {};
-                for (const ponto of this.pontos_dados) {
-                    const alvo = ponto.alvo;
-                    if (!alvos_grupos[alvo]) {
-                        alvos_grupos[alvo] = [];
-                    }
-                    alvos_grupos[alvo].push(ponto);
-                }
-                
-                console.log(`🎯 Alvos encontrados: ${Object.keys(alvos_grupos)}`);
-                
-                // Calcula intersecções para mesmo alvo
-                for (const [alvo, pontos_alvo] of Object.entries(alvos_grupos)) {
-                    if (pontos_alvo.length >= 2) {
-                        console.log(`📍 Processando alvo: ${alvo}`);
-                        
-                        // Testa todas as combinações de pares
-                        for (let i = 0; i < pontos_alvo.length; i++) {
-                            for (let j = i + 1; j < pontos_alvo.length; j++) {
-                                const ponto1 = pontos_alvo[i];
-                                const ponto2 = pontos_alvo[j];
-                                
-                                const intersecao = this.interseccao_duas_linhas(ponto1, ponto2);
-                                
-                                if (intersecao) {
-                                    const [lat_inter, lon_inter] = intersecao;
-                                    
-                                    // Calcula precisão baseada na distância aos pontos
-                                    const dist1 = this.calcular_distancia(ponto1.lat, ponto1.lon, lat_inter, lon_inter);
-                                    const dist2 = this.calcular_distancia(ponto2.lat, ponto2.lon, lat_inter, lon_inter);
-                                    const precisao = Math.abs(dist1 - dist2);
-                                    
-                                    const interseccao_info = {
-                                        nome: `${alvo}_Inter_${interseccoes_calculadas + 1}`,
-                                        lat: lat_inter,
-                                        lon: lon_inter,
-                                        alvos: [alvo],
-                                        pontos_origem: [ponto1.nome, ponto2.nome],
-                                        pontos_completos: [ponto1, ponto2],
-                                        precisao: precisao,
-                                        tipo: 'mesmo_alvo'
-                                    };
-                                    
-                                    this.interseccoes.push(interseccao_info);
-                                    interseccoes_calculadas++;
-                                    
-                                    console.log(`✅ Intersecção ${interseccoes_calculadas}:`);
-                                    console.log(`   📍 ${lat_inter.toFixed(6)}, ${lon_inter.toFixed(6)}`);
-                                    console.log(`   📊 Precisão: ${precisao.toFixed(1)}m`);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Calcula intersecções entre alvos diferentes (opcional)
-                console.log("🔗 Verificando intersecções entre alvos diferentes...");
-                let contador_inter_alvos = 0;
-                
-                for (let i = 0; i < this.pontos_dados.length; i++) {
-                    for (let j = i + 1; j < this.pontos_dados.length; j++) {
-                        const ponto1 = this.pontos_dados[i];
-                        const ponto2 = this.pontos_dados[j];
-                        
-                        // Só processa se forem alvos diferentes
-                        if (ponto1.alvo !== ponto2.alvo) {
-                            const intersecao = this.interseccao_duas_linhas(ponto1, ponto2);
-                            
-                            if (intersecao) {
-                                const [lat_inter, lon_inter] = intersecao;
-                                
-                                const interseccao_info = {
-                                    nome: `Inter_${ponto1.alvo}_${ponto2.alvo}`,
-                                    lat: lat_inter,
-                                    lon: lon_inter,
-                                    alvos: [ponto1.alvo, ponto2.alvo],
-                                    pontos_origem: [ponto1.nome, ponto2.nome],
-                                    pontos_completos: [ponto1, ponto2],
-                                    tipo: 'alvos_diferentes'
-                                };
-                                
-                                this.interseccoes.push(interseccao_info);
-                                interseccoes_calculadas++;
-                                contador_inter_alvos++;
-                            }
-                        }
-                    }
-                }
-                
-                console.log(`➕ ${contador_inter_alvos} intersecções entre alvos diferentes`);
-                console.log(`✅ Total de intersecções calculadas: ${interseccoes_calculadas}`);
-                
-                this.updateStatus();
-                return interseccoes_calculadas;
-            }
-            
-            gerar_mapa() {
-                console.log("🗺️ GERANDO MAPA INTERATIVO MELHORADO");
-                
-                if (!this.pontos_dados) {
-                    alert("❌ Nenhum ponto para plotar!");
-                    return;
-                }
-                
-                // Limpa marcadores e linhas existentes
-                this.clearMap();
-                
-                // Calcula centro do mapa
-                let todas_lats = this.pontos_dados.map(p => p.lat);
-                let todas_lons = this.pontos_dados.map(p => p.lon);
-                
-                if (this.interseccoes.length > 0) {
-                    todas_lats = todas_lats.concat(this.interseccoes.map(i => i.lat));
-                    todas_lons = todas_lons.concat(this.interseccoes.map(i => i.lon));
-                }
-                
-                const centro_lat = todas_lats.reduce((a, b) => a + b, 0) / todas_lats.length;
-                const centro_lon = todas_lons.reduce((a, b) => a + b, 0) / todas_lons.length;
-                
-                // Ajusta a visualização do mapa
-                this.map.setView([centro_lat, centro_lon], 14);
-                
-                // Cores para azimutes
-                const cores_azimute = ['red', 'green', 'purple', 'orange', 'darkblue', 'lightgreen',
-                                     'darkred', 'pink', 'gray', 'black'];
-                
-                // Adiciona pontos de observação
-                for (let i = 0; i < this.pontos_dados.length; i++) {
-                    const ponto = this.pontos_dados[i];
-                    const cor = cores_azimute[i % cores_azimute.length];
-                    
-                    // Popup com informações
-                    const popup_text = `
-                        <div style="width:250px">
-                        <b>📍 ${ponto.nome}</b><br>
-                        <b>Tipo:</b> Ponto de Observação<br>
-                        <b>Coordenadas:</b><br>
-                        • Lat: ${ponto.lat.toFixed(6)}<br>
-                        • Lon: ${ponto.lon.toFixed(6)}<br>
-                        <b>Azimute:</b> ${ponto.azimute.toFixed(1)}°<br>
-                        <b>Alvo:</b> ${ponto.alvo}<br>
-                        ${ponto.distancia ? `<b>Distância:</b> ${ponto.distancia}m<br>` : ''}
-                        <b>Criado:</b> ${ponto.timestamp}
-                        </div>
-                    `;
-                    
-                    // Cria marcador
-                    const marker = L.marker([ponto.lat, ponto.lon], {
-                        icon: L.divIcon({
-                            html: `<i class="fas fa-camera" style="color:blue; font-size:20px;"></i>`,
-                            iconSize: [20, 20],
-                            className: 'custom-icon'
-                        })
-                    }).bindPopup(popup_text);
-                    
-                    marker.addTo(this.map);
-                    this.currentMarkers.push(marker);
-                    
-                    // Calcula ponto final da linha usando distância fixa ou estimada
-                    const distancia_linha = ponto.distancia || 10000;  // 10km padrão
-                    const [lat_fim, lon_fim] = this.calcular_ponto_por_azimute(
-                        ponto.lat, ponto.lon, ponto.azimute, distancia_linha
-                    );
-                    
-                    // Linha de azimute VERDADEIRA
-                    const line = L.polyline([[ponto.lat, ponto.lon], [lat_fim, lon_fim]], {
-                        color: cor,
-                        weight: 3,
-                        opacity: 0.7,
-                        dashArray: "5, 5",  // Linha tracejada para distinguir
-                    }).bindTooltip(`🧭 ${ponto.nome}: Azimute ${ponto.azimute.toFixed(1)}° → ${ponto.alvo}`);
-                    
-                    line.addTo(this.map);
-                    this.currentLines.push(line);
-                }
-                
-                // Desenha linhas de triangulação (até intersecções)
-                if (this.interseccoes.length > 0) {
-                    console.log("📏 Desenhando linhas de triangulação...");
-                    
-                    const linhas_triangulacao = new Set();  // Para evitar duplicatas
-                    
-                    for (const intersecao of this.interseccoes) {
-                        for (const ponto_completo of intersecao.pontos_completos) {
-                            const chave_linha = `${ponto_completo.nome}-${intersecao.nome}`;
-                            
-                            if (!linhas_triangulacao.has(chave_linha)) {
-                                // Linha da triangulação (até a intersecção calculada)
-                                const line = L.polyline([
-                                    [ponto_completo.lat, ponto_completo.lon],
-                                    [intersecao.lat, intersecao.lon]
-                                ], {
-                                    color: 'black',
-                                    weight: 2,
-                                    opacity: 0.5,
-                                    dashArray: "2, 10",  // Linha bem tracejada
-                                }).bindTooltip(`📐 Triangulação: ${ponto_completo.nome} → ${intersecao.nome}`);
-                                
-                                line.addTo(this.map);
-                                this.currentLines.push(line);
-                                linhas_triangulacao.add(chave_linha);
-                            }
-                        }
-                    }
-                }
-                
-                // Adiciona intersecções com ícone de localização vermelho
-                for (const intersecao of this.interseccoes) {
-                    const precisao_texto = intersecao.precisao ? `<br><b>📊 Precisão:</b> ${intersecao.precisao.toFixed(1)}m` : "";
-                    
-                    const popup_text = `
-                        <div style="width:280px">
-                        <b>🎯 ${intersecao.nome}</b><br>
-                        <b>Tipo:</b> Intersecção Calculada<br>
-                        <b>Coordenadas:</b><br>
-                        • Lat: ${intersecao.lat.toFixed(6)}<br>
-                        • Lon: ${intersecao.lon.toFixed(6)}<br>
-                        <b>🎯 Alvos:</b> ${intersecao.alvos.join(', ')}<br>
-                        <b>📍 Pontos Origem:</b><br>
-                        • ${intersecao.pontos_origem.join(' & ')}
-                        ${precisao_texto}
-                        </div>
-                    `;
-                    
-                    const marker = L.marker([intersecao.lat, intersecao.lon], {
-                        icon: L.divIcon({
-                            html: `<i class="fas fa-map-marker" style="color:red; font-size:20px;"></i>`,
-                            iconSize: [20, 20],
-                            className: 'custom-icon'
-                        })
-                    }).bindPopup(popup_text);
-                    
-                    marker.addTo(this.map);
-                    this.currentMarkers.push(marker);
-                }
-                
-                // Adiciona box de informações
-                this.addInfoBox();
-                
-                console.log(`✅ Mapa gerado com sucesso!`);
-                console.log(`📊 Pontos plotados: ${this.pontos_dados.length}`);
-                console.log(`🎯 Intersecções plotadas: ${this.interseccoes.length}`);
-            }
-            
-            clearMap() {
-                // Remove todos os marcadores e linhas do mapa
-                for (const marker of this.currentMarkers) {
-                    this.map.removeLayer(marker);
-                }
-                for (const line of this.currentLines) {
-                    this.map.removeLayer(line);
-                }
-                this.currentMarkers = [];
-                this.currentLines = [];
-            }
-            
-            salvar_dados() {
-                if (!this.pontos_dados || this.pontos_dados.length === 0) {
-                    alert("❌ Nenhum dado para salvar!");
-                    return;
-                }
-                
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const data = {
-                    pontos: this.pontos_dados,
-                    interseccoes: this.interseccoes
-                };
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `triangulacao_dados_${timestamp}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                alert(`✅ Dados salvos em: triangulacao_dados_${timestamp}.json`);
-            }
-            
-            carregar_dados(jsonData) {
-                try {
-                    const data = JSON.parse(jsonData);
-                    
-                    if (!data.pontos || !Array.isArray(data.pontos)) {
-                        throw new Error("Formato de arquivo inválido - falta array de pontos");
-                    }
-                    
-                    this.pontos_dados = data.pontos;
-                    this.interseccoes = data.interseccoes || [];
-                    
-                    alert(`✅ Dados carregados com sucesso!\n📍 Pontos: ${this.pontos_dados.length}\n🎯 Intersecções: ${this.interseccoes.length}`);
-                    this.updateStatus();
-                    return true;
-                    
-                } catch (error) {
-                    console.error(`❌ Erro ao carregar dados: ${error}`);
-                    alert(`❌ Erro ao carregar dados: ${error.message}`);
-                    return false;
-                }
-            }
-            
-            limpar_dados() {
-                this.pontos_dados = [];
-                this.interseccoes = [];
-                this.clearMap();
-                this.updateStatus();
-                alert("✅ Todos os dados foram limpos!");
-            }
-            
-            updateStatus() {
-                const statusBar = document.getElementById('statusBar');
-                if (statusBar) {
-                    statusBar.innerHTML = `📊 Status: ${this.pontos_dados.length} pontos | ${this.interseccoes.length} intersecções`;
-                }
-            }
-            
-            // Método para exemplo rápido (opcional)
-            exemplo_rapido() {
-                // Adiciona pontos de exemplo
-                this.pontos_dados = [
-                    {
-                        nome: 'Base_Norte',
-                        lat: -23.5505,
-                        lon: -46.6333,
-                        azimute: 135.0,
-                        alvo: 'Torre_Central',
-                        distancia: 1500,
-                        timestamp: new Date().toLocaleString()
-                    },
-                    {
-                        nome: 'Base_Sul',
-                        lat: -23.5520,
-                        lon: -46.6340,
-                        azimute: 45.0,
-                        alvo: 'Torre_Central',
-                        distancia: 1200,
-                        timestamp: new Date().toLocaleString()
-                    },
-                    {
-                        nome: 'Base_Leste',
-                        lat: -23.5515,
-                        lon: -46.6320,
-                        azimute: 270.0,
-                        alvo: 'Antena_Oeste',
-                        distancia: 800,
-                        timestamp: new Date().toLocaleString()
-                    }
-                ];
-                
-                this.updateStatus();
-                alert("🎯 Exemplo rápido carregado!\n📍 3 pontos de exemplo adicionados\n💡 Execute a triangulação e gere o mapa");
+            } catch (error) {
+                console.error('Erro ao inicializar Google API:', error);
+                // Fallback para modo de demonstração
+                loadDemoData();
             }
         }
-        
-        // Cria instância do sistema
-        const sistema = new SistemaTriangulacaoMelhorado();
-        
-        // Funções para interação com a interface
-        function showAddPointModal() {
-            document.getElementById('addPointModal').style.display = 'block';
-            document.getElementById('pointName').focus();
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-        
-        function showViewDataModal() {
-            const modal = document.getElementById('viewDataModal');
-            const pointsDiv = document.getElementById('pointsData');
-            const intersectionsDiv = document.getElementById('intersectionsData');
-            
-            // Limpa conteúdo anterior
-            pointsDiv.innerHTML = '';
-            intersectionsDiv.innerHTML = '';
-            
-            if (sistema.pontos_dados.length === 0) {
-                pointsDiv.innerHTML = '<p style="text-align:center; color:#666;">📭 Nenhum ponto cadastrado ainda</p>';
-                intersectionsDiv.style.display = 'none';
-            } else {
-                // Adiciona pontos
-                pointsDiv.innerHTML = `<h4 style="margin-top:0;">📍 TOTAL DE PONTOS: ${sistema.pontos_dados.length}</h4>`;
-                
-                for (let i = 0; i < sistema.pontos_dados.length; i++) {
-                    const ponto = sistema.pontos_dados[i];
-                    
-                    const pontoHTML = `
-                        <div class="data-item">
-                            <b>🔸 PONTO ${i+1}: ${ponto.nome}</b>
-                            <p style="margin:5px 0;">
-                                📍 ${ponto.lat.toFixed(6)}, ${ponto.lon.toFixed(6)}<br>
-                                🧭 Azimute: ${ponto.azimute.toFixed(1)}°<br>
-                                🎯 Alvo: ${ponto.alvo}<br>
-                                ${ponto.distancia ? `📏 Distância: ${ponto.distancia}m<br>` : ''}
-                                ⏰ Criado: ${ponto.timestamp}
-                            </p>
-                        </div>
-                    `;
-                    
-                    pointsDiv.innerHTML += pontoHTML;
+
+        function loadDemoData() {
+            // Dados de exemplo baseados na sua planilha real
+            photos = [
+                {
+                    id: 'Idibw001',
+                    participante: 'Antonio Amaral',
+                    titulo: 'Casal de papa formigas de grota',
+                    especie: 'Myrmoderus squamosus papa formiga de grota',
+                    link: 'https://drive.google.com/uc?id=1Y4G-aSzeROiqXGf3Rw8rhWezWV5VYdmF'
+                },
+                {
+                    id: 'Idibw002',
+                    participante: 'Arlaine dos Santos Francisco',
+                    titulo: 'Saíra-ferrugem',
+                    especie: 'Saíra-ferrugem',
+                    link: 'https://drive.google.com/uc?id=1L9zfWqg3sGHfl17dNeYfyqTRYcPy2NWd'
+                },
+                {
+                    id: 'Idibw003',
+                    participante: 'Bia Carvalho',
+                    titulo: 'dasds',
+                    especie: 'dsaas',
+                    link: 'https://drive.google.com/uc?id=1U0eva3lWK4gnLk8OkFGoCI82WV-sdpC4'
                 }
-                
-                // Adiciona intersecções se existirem
-                if (sistema.interseccoes.length > 0) {
-                    intersectionsDiv.style.display = 'block';
-                    intersectionsDiv.innerHTML = `<h4>🎯 INTERSECÇÕES CALCULADAS: ${sistema.interseccoes.length}</h4>`;
-                    
-                    for (let i = 0; i < sistema.interseccoes.length; i++) {
-                        const inter = sistema.interseccoes[i];
-                        
-                        const interHTML = `
-                            <div class="data-item">
-                                <b>🔻 INTERSECÇÃO ${i+1}: ${inter.nome}</b>
-                                <p style="margin:5px 0;">
-                                    📍 ${inter.lat.toFixed(6)}, ${inter.lon.toFixed(6)}<br>
-                                    🎯 Entre alvos: ${inter.alvos.join(', ')}<br>
-                                    📐 Pontos origem: ${inter.pontos_origem.join(', ')}<br>
-                                    ${inter.precisao ? `📊 Precisão estimada: ${inter.precisao.toFixed(1)}m<br>` : ''}
-                                </p>
-                            </div>
-                        `;
-                        
-                        intersectionsDiv.innerHTML += interHTML;
-                    }
-                } else {
-                    intersectionsDiv.style.display = 'none';
-                }
-            }
+            ];
             
-            modal.style.display = 'block';
+            console.log('Modo demonstração carregado com', photos.length, 'fotos');
         }
-        
-        function addPoint() {
-            const nome = document.getElementById('pointName').value.trim();
-            const lat = parseFloat(document.getElementById('pointLat').value);
-            const lon = parseFloat(document.getElementById('pointLon').value);
-            const azimute = parseFloat(document.getElementById('pointAzimuth').value);
-            const alvo = document.getElementById('pointTarget').value.trim();
+
+        function setupEventListeners() {
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+            document.getElementById('prevBtn').addEventListener('click', () => navigatePhoto(-1));
+            document.getElementById('nextBtn').addEventListener('click', () => navigatePhoto(1));
             
-            let distancia = null;
-            if (document.getElementById('useDistance').checked) {
-                distancia = parseFloat(document.getElementById('pointDistance').value);
-                if (isNaN(distancia) || distancia <= 0) {
-                    alert("❌ Distância deve ser maior que 0!");
-                    return;
-                }
-            }
-            
-            if (sistema.adicionar_ponto_completo(nome, lat, lon, azimute, alvo, distancia)) {
-                // Limpa o formulário
-                document.getElementById('pointName').value = '';
-                document.getElementById('pointLat').value = '';
-                document.getElementById('pointLon').value = '';
-                document.getElementById('pointAzimuth').value = '';
-                document.getElementById('pointTarget').value = '';
-                document.getElementById('useDistance').checked = false;
-                document.getElementById('pointDistance').style.display = 'none';
-                document.getElementById('pointDistance').value = '';
-                
-                closeModal('addPointModal');
-            }
+            // Modal para ampliar fotos
+            document.getElementById('photoModal').addEventListener('click', closeModal);
         }
-        
-        function calculateTriangulation() {
-            const numIntersecoes = sistema.calcular_triangulacao();
-            if (numIntersecoes > 0) {
-                alert(`✅ Triangulação calculada com sucesso!\n🎯 ${numIntersecoes} intersecções encontradas`);
-            }
-        }
-        
-        function generateMap() {
-            sistema.gerar_mapa();
-            alert("🗺️ Mapa gerado com sucesso!\nVisualize os pontos e intersecções no mapa.");
-        }
-        
-        function saveData() {
-            sistema.salvar_dados();
-        }
-        
-        function loadData() {
-            document.getElementById('loadDataModal').style.display = 'block';
-        }
-        
-        function loadDataFromFile() {
-            const fileInput = document.getElementById('dataFile');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert("❌ Selecione um arquivo primeiro!");
+
+        function handleLogin() {
+            if (!gapiInitialized) {
+                alert('Sistema ainda carregando. Tente novamente em alguns segundos.');
                 return;
             }
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                sistema.carregar_dados(content);
-                closeModal('loadDataModal');
-            };
-            reader.readAsText(file);
+            const authInstance = gapi.auth2.getAuthInstance();
+            authInstance.signIn().then(handleAuthSuccess).catch(error => {
+                console.error('Erro no login:', error);
+                alert('Erro ao fazer login. Verifique suas permissões.');
+            });
         }
-        
-        function clearData() {
-            showConfirmModal(
-                "Limpar todos os dados",
-                `⚠️ Isso removerá todos os pontos e intersecções.<br><br>
-                📍 Pontos: ${sistema.pontos_dados.length}<br>
-                🎯 Intersecções: ${sistema.interseccoes.length}<br><br>
-                Confirma a limpeza?`,
-                function() {
-                    sistema.limpar_dados();
-                    closeModal('confirmModal');
-                }
-            );
-        }
-        
-        function exitSystem() {
-            showConfirmModal(
-                "Sair do sistema",
-                "Deseja realmente sair do sistema?",
-                function() {
-                    if (sistema.pontos_dados.length > 0) {
-                        showConfirmModal(
-                            "Salvar antes de sair",
-                            "Deseja salvar os dados antes de sair?",
-                            function() {
-                                sistema.salvar_dados();
-                                closeModal('confirmModal');
-                                alert("👋 Sistema encerrado com sucesso!");
-                            },
-                            function() {
-                                closeModal('confirmModal');
-                                alert("👋 Sistema encerrado com sucesso!");
-                            }
-                        );
-                    } else {
-                        alert("👋 Sistema encerrado com sucesso!");
-                    }
-                }
-            );
-        }
-        
-        function showConfirmModal(title, message, yesCallback, noCallback) {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').innerHTML = message;
+
+        function handleAuthSuccess() {
+            const authInstance = gapi.auth2.getAuthInstance();
+            const user = authInstance.currentUser.get();
+            const profile = user.getBasicProfile();
+            const email = profile.getEmail();
             
-            const yesBtn = document.getElementById('confirmYesBtn');
-            yesBtn.onclick = function() {
-                if (yesCallback) yesCallback();
-                closeModal('confirmModal');
-            };
-            
-            document.getElementById('confirmModal').style.display = 'block';
-        }
-        
-        // Event listeners
-        document.getElementById('pointAzimuth').addEventListener('input', function() {
-            const azimute = parseFloat(this.value);
-            if (!isNaN(azimute) && azimute >= 0 && azimute <= 360) {
-                document.getElementById('azimuthDirection').textContent = 
-                    `Direção: ${sistema.validar_azimute(azimute)}`;
-            } else {
-                document.getElementById('azimuthDirection').textContent = 'Direção: -';
+            // Verificar se é jurado autorizado
+            if (!JURADOS_AUTORIZADOS[email]) {
+                alert('Acesso negado. Você não está autorizado como jurado.');
+                authInstance.signOut();
+                return;
             }
-        });
-        
-        document.getElementById('useDistance').addEventListener('change', function() {
-            document.getElementById('pointDistance').style.display = this.checked ? 'block' : 'none';
-        });
-        
-        // Pergunta se quer carregar exemplo rápido
-        document.addEventListener('DOMContentLoaded', function() {
-            const usarExemplo = confirm("🚀 Deseja carregar um exemplo rápido para demonstração?");
-            if (usarExemplo) {
-                sistema.exemplo_rapido();
+            
+            currentUser = {
+                name: profile.getName(),
+                email: email,
+                juradoInfo: JURADOS_AUTORIZADOS[email]
+            };
+            
+            loadPhotosFromSheets();
+        }
+
+        async function loadPhotosFromSheets() {
+            try {
+                showLoading('Carregando fotos do concurso...');
+                
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SHEET_ID,
+                    range: 'Fotos_Votacao!A2:J200', // Ajuste conforme necessário
+                });
+                
+                const rows = response.result.values || [];
+                photos = rows
+                    .filter(row => row[0] && row[4]) // Tem ID e link
+                    .map(row => ({
+                        id: row[0],
+                        participante: row[1] || 'N/A',
+                        titulo: row[2] || 'Sem título',
+                        especie: row[3] || 'N/A',
+                        link: convertDriveLink(row[4]),
+                        votos: {
+                            jurado1: row[5] || '',
+                            jurado2: row[6] || '',
+                            jurado3: row[7] || '',
+                            jurado4: row[8] || ''
+                        }
+                    }));
+                
+                // Carregar votos já existentes do jurado atual
+                loadExistingVotes();
+                
+                hideLoading();
+                showVotingInterface();
+                
+            } catch (error) {
+                console.error('Erro ao carregar fotos:', error);
+                hideLoading();
+                alert('Erro ao carregar fotos. Verifique as permissões da planilha.');
+            }
+        }
+
+        function loadExistingVotes() {
+            const juradoCol = currentUser.juradoInfo.coluna;
+            const colIndex = juradoCol.charCodeAt(0) - 70; // F=0, G=1, H=2, I=3
+            
+            photos.forEach(photo => {
+                const votoExistente = Object.values(photo.votos)[colIndex];
+                if (votoExistente && !isNaN(votoExistente)) {
+                    votes[photo.id] = parseInt(votoExistente);
+                }
+            });
+        }
+
+        function showLoading(message) {
+            document.getElementById('loginSection').innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 20px;">⏳</div>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            document.getElementById('loginSection').style.display = 'none';
+        }
+
+        function showVotingInterface() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('votingInterface').style.display = 'block';
+            
+            // Mostrar info do usuário
+            document.getElementById('userInfo').innerHTML = `
+                <strong>Logado como:</strong> ${currentUser.name} (${currentUser.email})
+                <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Sair</button>
+            `;
+            
+            loadCurrentPhoto();
+        }
+
+        function showVotingInterface() {
+            document.getElementById('votingInterface').style.display = 'block';
+            
+            // Mostrar info do usuário
+            document.getElementById('userInfo').innerHTML = `
+                <strong>Logado como:</strong> ${currentUser.name} (${currentUser.email})
+                <span style="margin-left: 20px; color: #666;">${currentUser.juradoInfo.nome}</span>
+                <button onclick="logout()" style="float: right; background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Sair</button>
+            `;
+            
+            loadCurrentPhoto();
+        }
+
+        function loadCurrentPhoto() {
+            if (photos.length === 0) {
+                document.getElementById('photoCard').innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h3>Nenhuma foto encontrada</h3>
+                        <p>Verifique se a planilha contém dados na aba 'Fotos_Votacao'</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const photo = photos[currentPhotoIndex];
+            const currentVote = votes[photo.id] || 0;
+            
+            document.getElementById('photoCard').innerHTML = `
+                <div class="photo-info">
+                    <div class="photo-details">
+                        <h3>${photo.titulo}</h3>
+                        <p><strong>Participante:</strong> ${photo.participante}</p>
+                        <p><strong>Espécie:</strong> ${photo.especie}</p>
+                        <p><strong>ID:</strong> ${photo.id}</p>
+                        
+                        <div class="rating-section">
+                            <div class="rating-title">Avalie esta foto (1 a 5)</div>
+                            <div class="rating-buttons">
+                                ${[1,2,3,4,5].map(num => `
+                                    <button class="rating-btn ${currentVote === num ? 'selected' : ''}" 
+                                            onclick="setRating('${photo.id}', ${num})">${num}</button>
+                                `).join('')}
+                            </div>
+                            <button class="save-btn" onclick="saveVote('${photo.id}')" 
+                                    ${currentVote === 0 ? 'disabled' : ''}>
+                                ${currentVote > 0 ? '✓ Atualizar Voto' : 'Salvar Voto'}
+                            </button>
+                            ${currentVote > 0 ? `<p style="text-align: center; margin-top: 10px; color: #4CAF50;">Nota atual: ${currentVote}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="photo-container">
+                        <img src="${photo.link}" alt="${photo.titulo}" 
+                             onclick="openModal('${photo.link}', '${photo.titulo}')" 
+                             onerror="this.src='https://via.placeholder.com/400x300/cccccc/666666?text=Foto+Indisponível'">
+                        <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                            Clique na foto para ampliar
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            updateProgress();
+            updateNavigation();
+        }
+
+        function setRating(photoId, rating) {
+            votes[photoId] = rating;
+            
+            // Atualizar visual dos botões
+            document.querySelectorAll('.rating-btn').forEach((btn, index) => {
+                btn.classList.toggle('selected', index + 1 === rating);
+            });
+            
+            // Habilitar botão de salvar
+            document.querySelector('.save-btn').disabled = false;
+        }
+
+        async function saveVote(photoId) {
+            const rating = votes[photoId];
+            if (!rating) return;
+            
+            try {
+                // Encontrar linha da foto
+                const photoIndex = photos.findIndex(p => p.id === photoId);
+                const rowNumber = photoIndex + 2; // +2 porque começa na linha 2 do Sheets
+                const coluna = currentUser.juradoInfo.coluna;
+                
+                showSaveStatus('Salvando...');
+                
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SHEET_ID,
+                    range: `Fotos_Votacao!${coluna}${rowNumber}`,
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: [[rating]]
+                    }
+                });
+                
+                // Atualizar média se necessário
+                await updateMedia(rowNumber);
+                
+                showSaveStatus('✓ Salvo!', 'success');
+                
+                setTimeout(() => {
+                    hideSaveStatus();
+                    // Auto-navegar para próxima foto não votada
+                    navigateToNextUnvoted();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erro ao salvar voto:', error);
+                showSaveStatus('Erro ao salvar', 'error');
+            }
+        }
+
+        async function updateMedia(rowNumber) {
+            // Fórmula para calcular média dos 4 jurados
+            const formula = `=SE(CONTAR.VALORES(F${rowNumber}:I${rowNumber})>0;MÉDIA(F${rowNumber}:I${rowNumber});"")`;
+            
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: SHEET_ID,
+                range: `Fotos_Votacao!J${rowNumber}`,
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [[formula]]
+                }
+            });
+        }
+
+        function showSaveStatus(message, type = 'info') {
+            const statusEl = document.querySelector('.save-status') || createSaveStatus();
+            statusEl.textContent = message;
+            statusEl.className = `save-status ${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        function hideSaveStatus() {
+            const statusEl = document.querySelector('.save-status');
+            if (statusEl) statusEl.style.display = 'none';
+        }
+
+        function createSaveStatus() {
+            const statusEl = document.createElement('div');
+            statusEl.className = 'save-status';
+            statusEl.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: bold;
+                z-index: 1000;
+                display: none;
+            `;
+            document.body.appendChild(statusEl);
+            return statusEl;
+        }
+
+        function navigatePhoto(direction) {
+            const newIndex = currentPhotoIndex + direction;
+            if (newIndex >= 0 && newIndex < photos.length) {
+                currentPhotoIndex = newIndex;
+                loadCurrentPhoto();
+            }
+        }
+
+        function navigateToNextUnvoted() {
+            for (let i = currentPhotoIndex + 1; i < photos.length; i++) {
+                if (!votes[photos[i].id]) {
+                    currentPhotoIndex = i;
+                    loadCurrentPhoto();
+                    return;
+                }
+            }
+            
+            // Se chegou aqui, todas foram votadas
+            showSummary();
+        }
+
+        function updateProgress() {
+            const votedCount = Object.keys(votes).length;
+            const progress = (votedCount / photos.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function updateNavigation() {
+            const counter = document.getElementById('photoCounter');
+            counter.textContent = `${currentPhotoIndex + 1} / ${photos.length}`;
+            
+            document.getElementById('prevBtn').disabled = currentPhotoIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPhotoIndex === photos.length - 1;
+        }
+
+        function showSummary() {
+            const votedCount = Object.keys(votes).length;
+            const avgRating = Object.values(votes).reduce((a, b) => a + b, 0) / votedCount;
+            
+            document.getElementById('summaryStats').innerHTML = `
+                <p><strong>Fotos avaliadas:</strong> ${votedCount} de ${photos.length}</p>
+                <p><strong>Nota média dada:</strong> ${avgRating.toFixed(1)}</p>
+            `;
+            
+            document.getElementById('summary').style.display = 'block';
+        }
+
+        function openModal(src, title) {
+            const modal = document.getElementById('photoModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = src;
+            modalImg.alt = title;
+        }
+
+        function closeModal() {
+            document.getElementById('photoModal').style.display = 'none';
+        }
+
+        function logout() {
+            currentUser = null;
+            votes = {};
+            currentPhotoIndex = 0;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('votingInterface').style.display = 'none';
+        }
+
+        // Converter link do Drive para visualização direta
+        function convertDriveLink(driveUrl) {
+            if (!driveUrl) return '';
+            
+            // Extrair ID do arquivo do Drive
+            const fileIdMatch = driveUrl.match(/\/d\/([a-zA-Z0-9-_]+)/) || 
+                               driveUrl.match(/id=([a-zA-Z0-9-_]+)/);
+            
+            if (fileIdMatch) {
+                return `https://drive.google.com/uc?id=${fileIdMatch[1]}`;
+            }
+            
+            return driveUrl;
+        }
+
+        function logout() {
+            if (gapiInitialized) {
+                const authInstance = gapi.auth2.getAuthInstance();
+                authInstance.signOut();
+            }
+            
+            currentUser = null;
+            votes = {};
+            currentPhotoIndex = 0;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('loginSection').innerHTML = `
+                <h2>Acesso para Jurados</h2>
+                <p style="margin: 20px 0;">Entre com sua conta Google para começar a votação</p>
+                <button id="loginBtn" class="login-btn">
+                    <span>📧</span>
+                    Entrar com Google
+                </button>
+            `;
+            document.getElementById('votingInterface').style.display = 'none';
+            
+            // Reconfigurar event listener
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+        }
+
+        // Teclas de atalho
+        document.addEventListener('keydown', function(e) {
+            if (currentUser) {
+                if (e.key >= '1' && e.key <= '5') {
+                    const photo = photos[currentPhotoIndex];
+                    setRating(photo.id, parseInt(e.key));
+                } else if (e.key === 'ArrowLeft') {
+                    navigatePhoto(-1);
+                } else if (e.key === 'ArrowRight') {
+                    navigatePhoto(1);
+                } else if (e.key === 'Enter') {
+                    const photo = photos[currentPhotoIndex];
+                    if (votes[photo.id]) saveVote(photo.id);
+                }
             }
         });
     </script>
