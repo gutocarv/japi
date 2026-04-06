@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triangulação Serra do Japi — v3.0</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.esm.js" type="module" id="exifrModule"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel2: #1c2330;
+    --border: #30363d;
+    --accent: #3fb950;
+    --accent2: #58a6ff;
+    --accent3: #f78166;
+    --accent4: #e3b341;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --danger: #f85149;
+    --radius: 8px;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .sidebar-sub {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .sidebar-version {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 10px;
+  }
+  .nav-section {
+    margin-bottom: 14px;
+  }
+  .nav-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    font-family: var(--mono);
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 2px;
+  }
+  .nav-btn:hover { background: var(--panel2); color: var(--text); }
+  .nav-btn i { width: 16px; text-align: center; font-size: 13px; }
+  .nav-btn.primary { color: var(--accent); }
+  .nav-btn.primary:hover { background: rgba(63,185,80,0.12); }
+  .nav-btn.info-btn { color: var(--accent2); }
+  .nav-btn.info-btn:hover { background: rgba(88,166,255,0.10); }
+  .nav-btn.warn { color: var(--accent4); }
+  .nav-btn.warn:hover { background: rgba(227,179,65,0.10); }
+  .nav-btn.danger { color: var(--danger); }
+  .nav-btn.danger:hover { background: rgba(248,81,73,0.10); }
+
+  .sidebar-status {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.7;
+  }
+  .status-val { color: var(--accent); }
+
+  /* ── MAP AREA ── */
+  .map-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  #map {
+    width: 100%;
+    height: 100%;
+    background: #0d1117;
+  }
+
+  /* ── MODALS ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  .overlay.active { display: flex; }
+
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 540px;
+    max-width: 95vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    animation: modalIn 0.18s ease;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(16px) scale(0.97); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .modal-lg { width: 680px; }
+
+  .modal-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .modal-head h2 {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .modal-close {
+    background: none; border: none; color: var(--text3);
+    font-size: 20px; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); background: var(--panel2); }
+
+  .modal-body {
+    padding: 20px 22px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-foot {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* ── FORMS ── */
+  .form-row { margin-bottom: 14px; }
+  .form-row label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 5px;
+    letter-spacing: 0.3px;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%;
+    padding: 8px 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    border-color: var(--accent2);
+  }
+  .form-row input::placeholder { color: var(--text3); }
+  .form-hint {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+  .form-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text2);
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .checkbox-row input[type=checkbox] { accent-color: var(--accent2); width: 15px; height: 15px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-green  { background: var(--accent);  color: #000; }
+  .btn-blue   { background: var(--accent2); color: #000; }
+  .btn-ghost  { background: var(--panel2);  color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-red    { background: var(--danger);  color: #fff; }
+  .btn-yellow { background: var(--accent4); color: #000; }
+
+  /* ── POINT CARDS ── */
+  .card-list { display: flex; flex-direction: column; gap: 8px; }
+  .point-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .point-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .point-card-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .point-card-actions { display: flex; gap: 6px; }
+  .card-act-btn {
+    background: none; border: none; color: var(--text3);
+    font-size: 12px; cursor: pointer; padding: 3px 6px;
+    border-radius: 4px; transition: color 0.1s, background 0.1s;
+  }
+  .card-act-btn:hover { color: var(--text); background: var(--panel2); }
+  .card-act-btn.del:hover { color: var(--danger); background: rgba(248,81,73,0.1); }
+  .point-card-meta {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+    font-family: var(--mono);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .badge-green  { background: rgba(63,185,80,0.15);  color: var(--accent); }
+  .badge-blue   { background: rgba(88,166,255,0.15); color: var(--accent2); }
+  .badge-orange { background: rgba(247,129,102,0.15); color: var(--accent3); }
+
+  /* ── INTERSECTION CARDS ── */
+  .inter-card {
+    background: rgba(248,81,73,0.05);
+    border: 1px solid rgba(248,81,73,0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .inter-card-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent3);
+    margin-bottom: 6px;
+  }
+  .inter-card-meta {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.8;
+    font-family: var(--mono);
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 4px 0 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+
+  /* ── INSTRUTIONS BOX ── */
+  .instructions-toggle {
+    display: none;
+    position: absolute;
+    bottom: 28px;
+    right: 12px;
+    z-index: 999;
+  }
+  .instructions-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .instructions-btn:hover { background: var(--panel2); }
+  .instructions-panel {
+    position: absolute;
+    bottom: 62px;
+    right: 12px;
+    z-index: 999;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    max-width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    display: none;
+    animation: modalIn 0.15s ease;
+  }
+  .instructions-panel.open { display: block; }
+  .instructions-panel h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .instructions-panel ol {
+    padding-left: 18px;
+    font-size: 12.5px;
+    color: var(--text2);
+    line-height: 2;
+  }
+  .instructions-panel li { margin-bottom: 2px; }
+  .instructions-panel li b { color: var(--text); }
+
+  /* ── DEFAULT POINTS SELECT ── */
+  .default-pts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .default-pt-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text2);
+    font-size: 12px;
+    font-family: var(--mono);
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s;
+    line-height: 1.5;
+  }
+  .default-pt-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .default-pt-btn b { display: block; color: var(--accent2); font-size: 11px; }
+
+  /* ── SHARE BOX ── */
+  .share-url-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    word-break: break-all;
+    margin-bottom: 10px;
+    line-height: 1.5;
+    min-height: 48px;
+  }
+
+  /* ── LEAFLET DARK OVERRIDE ── */
+  .leaflet-container {
+    background: #1a2030;
+    font-family: var(--sans);
+  }
+  .leaflet-popup-content-wrapper {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .leaflet-popup-tip { background: var(--panel); }
+  .leaflet-popup-content { font-size: 13px; line-height: 1.7; }
+  .leaflet-popup-content b { color: var(--accent2); }
+  .leaflet-bar a {
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+  .leaflet-bar a:hover { background: var(--panel2) !important; }
+  .leaflet-control-attribution {
+    background: rgba(13,17,23,0.85) !important;
+    color: var(--text3) !important;
+    font-size: 10px !important;
+  }
+  .leaflet-control-attribution a { color: var(--text3) !important; }
+
+  /* ── TOAST ── */
+  .toast-wrap {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--text);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    animation: toastIn 0.2s ease;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error   { border-color: var(--danger); color: var(--danger); }
+  .toast.info    { border-color: var(--accent2); color: var(--accent2); }
+  @keyframes toastIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+
+  /* ── PRECISION BADGE ── */
+  .precision-good { color: var(--accent); }
+  .precision-ok   { color: var(--accent4); }
+  .precision-bad  { color: var(--danger); }
+
+  /* ── OCR LOADING ── */
+  .ocr-spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+  .empty-state {
+    text-align: center;
+    padding: 30px 0;
+    color: var(--text3);
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+  .empty-state i { font-size: 28px; margin-bottom: 10px; display: block; }
+
+  /* centroid badge */
+  .centroid-badge {
+    display: inline-block;
+    background: rgba(227,179,65,0.15);
+    border: 1px solid rgba(227,179,65,0.35);
+    color: var(--accent4);
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">🌿 Serra do Japi</div>
+    <div class="sidebar-sub">Sistema de Triangulação</div>
+    <div class="sidebar-version">v3.0 — Comunitário</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Pontos</div>
+      <button class="nav-btn primary" onclick="openModal('addPointModal')">
+        <i class="fas fa-plus-circle"></i> Adicionar ponto
+      </button>
+      <button class="nav-btn info-btn" onclick="openModal('viewDataModal')">
+        <i class="fas fa-list"></i> Ver todos os dados
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Dados</div>
+      <button class="nav-btn" onclick="shareData()">
+        <i class="fas fa-share-nodes"></i> Compartilhar link
+      </button>
+      <button class="nav-btn" onclick="saveData()">
+        <i class="fas fa-download"></i> Exportar JSON
+      </button>
+      <button class="nav-btn" onclick="openModal('loadDataModal')">
+        <i class="fas fa-upload"></i> Importar JSON
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="divider"></div>
+      <button class="nav-btn danger" onclick="confirmClear()">
+        <i class="fas fa-trash-can"></i> Limpar dados
+      </button>
+    </div>
+  </nav>
+
+  <div class="sidebar-status" id="statusBar">
+    Pontos: <span class="status-val" id="statPts">0</span><br>
+    Intersecções: <span class="status-val" id="statInter">0</span><br>
+    Centróides: <span class="status-val" id="statCentroid">0</span>
+  </div>
+</div>
+
+<!-- MAP -->
+<div class="map-wrap">
+  <div id="map"></div>
+
+  <!-- Instructions toggle (bottom-right over map) -->
+  <div style="position:absolute;bottom:28px;right:12px;z-index:999;">
+    <div class="instructions-panel" id="instrPanel">
+      <h3>📖 COMO USAR</h3>
+      <ol>
+        <li><b>Adicionar ponto</b> — informe sua localização (lat/lon), o azimute medido (bússola) e o alvo observado.</li>
+        <li><b>Pontos padrão</b> — vizinhos cadastrados aparecem para preenchimento rápido.</li>
+        <li><b>Calcular triangulação</b> — o sistema cruza os azimutes e estima a posição do alvo usando centróide ponderado para múltiplas observações.</li>
+        <li><b>Gerar mapa</b> — plota pontos, raios de azimute e intersecções no mapa.</li>
+        <li><b>Compartilhar</b> — gera um link com todos os dados embutidos para enviar aos colegas.</li>
+      </ol>
+    </div>
+    <button class="instructions-btn" onclick="toggleInstructions()">
+      <i class="fas fa-circle-question"></i> Como usar
+    </button>
+  </div>
+</div>
+
+<!-- TOAST AREA -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: ADICIONAR / EDITAR PONTO
+═══════════════════════════════════════════ -->
+<div class="overlay" id="addPointModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="addPointModalTitle">➕ ADICIONAR PONTO</h2>
+      <button class="modal-close" onclick="closeModal('addPointModal')">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Pontos padrão (vizinhos) -->
+      <div id="defaultPtsSection">
+        <div class="section-title">Vizinhos cadastrados — clique para preencher</div>
+        <div class="default-pts-grid" id="defaultPtsGrid"></div>
+        <div class="divider" style="margin-bottom:16px;"></div>
+      </div>
+
+      <div class="form-row">
+        <label>Nome do ponto de observação</label>
+        <input type="text" id="fName" placeholder="Ex: Casa_João">
+      </div>
+      <div class="form-cols">
+        <div class="form-row">
+          <label>Latitude</label>
+          <input type="number" id="fLat" step="0.000001" placeholder="-23.2143">
+        </div>
+        <div class="form-row">
+          <label>Longitude</label>
+          <input type="number" id="fLon" step="0.000001" placeholder="-46.9321">
+        </div>
+      </div>
+      <div class="form-cols">
+        <div class="form-row">
+          <label>Azimute (0–360°)</label>
+          <input type="number" id="fAzimute" min="0" max="360" step="0.1" placeholder="135.0">
+          <div class="form-hint" id="fAzDir">—</div>
+        </div>
+        <div class="form-row">
+          <label>Alvo observado</label>
+          <input type="text" id="fAlvo" placeholder="Ex: Torre_Central">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="checkbox-row">
+          <input type="checkbox" id="fUseDist"> Informar distância estimada (metros)
+        </label>
+        <input type="number" id="fDist" step="1" placeholder="Metros" style="display:none;">
+      </div>
+
+      <!-- OCR import — dentro do modal-body, após os campos manuais -->
+      <div class="divider" style="margin: 16px 0 14px;"></div>
+      <div class="section-title">Ou importe via foto</div>
+      <label style="
+        display:flex;align-items:center;gap:10px;
+        background:var(--bg);border:1px dashed var(--border);
+        border-radius:6px;padding:10px 14px;cursor:pointer;
+        color:var(--text2);font-size:13px;transition:border-color 0.15s;
+      " id="ocrDropLabel" onmouseenter="this.style.borderColor='var(--accent2)'" onmouseleave="this.style.borderColor='var(--border)'">
+        <i class="fas fa-camera" style="font-size:18px;color:var(--accent2);flex-shrink:0;"></i>
+        <span id="ocrLabelText">Clique para selecionar uma foto — lê GPS e azimute dos metadados EXIF</span>
+        <input type="file" id="ocrFile" accept="image/*" style="display:none;" onchange="handleOcrFile(this)">
+      </label>
+      <div id="ocrStatus" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--mono);color:var(--text2);line-height:1.8;"></div>
+
+    </div><!-- fim modal-body -->
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('addPointModal')">Cancelar</button>
+      <button class="btn btn-green" onclick="submitPoint()" id="addPointBtn">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: VER DADOS
+═══════════════════════════════════════════ -->
+<div class="overlay" id="viewDataModal">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <h2>📊 DADOS DO SISTEMA</h2>
+      <button class="modal-close" onclick="closeModal('viewDataModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-title">Pontos de observação</div>
+      <div id="viewPts" class="card-list"></div>
+      <div class="section-title" style="margin-top:20px;">Intersecções / Centróides</div>
+      <div id="viewInter"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('viewDataModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: IMPORTAR JSON
+═══════════════════════════════════════════ -->
+<div class="overlay" id="loadDataModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>📂 IMPORTAR JSON</h2>
+      <button class="modal-close" onclick="closeModal('loadDataModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Selecione um arquivo JSON exportado anteriormente</label>
+        <input type="file" id="fFile" accept=".json" style="color:var(--text2)">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('loadDataModal')">Cancelar</button>
+      <button class="btn btn-blue" onclick="loadFromFile()">Carregar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: COMPARTILHAR
+═══════════════════════════════════════════ -->
+<div class="overlay" id="shareModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>🔗 COMPARTILHAR</h2>
+      <button class="modal-close" onclick="closeModal('shareModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+        O link abaixo contém todos os pontos e intersecções codificados. Envie para seus colegas — ao abrir, o sistema carrega automaticamente.
+      </p>
+      <div class="share-url-box" id="shareUrlBox"></div>
+      <button class="btn btn-blue" onclick="copyShareUrl()" style="width:100%;">
+        <i class="fas fa-copy"></i> Copiar link
+      </button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('shareModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: CONFIRM
+═══════════════════════════════════════════ -->
+<div class="overlay" id="confirmModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <h2 id="confirmTitle">Confirmar</h2>
+      <button class="modal-close" onclick="closeModal('confirmModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="color:var(--text2);font-size:13.5px;line-height:1.6;"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancelar</button>
+      <button class="btn btn-red" id="confirmYes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  PONTOS PADRÃO (vizinhos / locais conhecidos)
+// ═══════════════════════════════════════════════════════════
+const PONTOS_PADRAO = [
+  { nome: 'Xango',      lat: -23.2802, lon: -46.9226, descricao: 'Trav Xango' },
+  { nome: 'Paiol1',      lat: -23.2806, lon: -46.9013, descricao: 'Paiol' },
+  { nome: 'Sta Clara', lat: -23.2524, lon: -46.8989, descricao: 'Vila' },
+  { nome: 'Baleia',    lat: -23.2221, lon: -46.8914, descricao: 'Pedra' },
+  { nome: 'Paiol',     lat: -23.2170, lon: -46.9400, descricao: 'Bar' },
+  { nome: 'Rua3',      lat: -23.2200, lon: -46.9350, descricao: 'Guarita' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════
+let STATE = {
+  pontos: [],
+  interseccoes: [],
+  centroidesPorAlvo: {},
+  editingIndex: null,
+};
+
+let map, markers = [], lines = [];
+
+// ═══════════════════════════════════════════════════════════
+//  OCR VIA CLAUDE VISION API
+// ═══════════════════════════════════════════════════════════
+// Carrega exifr dinamicamente (módulo ES)
+let _exifrPromise = null;
+function loadExifr() {
+  if (_exifrPromise) return _exifrPromise;
+  _exifrPromise = import('https://cdn.jsdelivr.net/npm/exifr@7/dist/full.esm.js');
+  return _exifrPromise;
+}
+
+async function handleOcrFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const label  = document.getElementById('ocrLabelText');
+  const status = document.getElementById('ocrStatus');
+
+  label.innerHTML = `<span class="ocr-spinner"></span> Lendo metadados EXIF...`;
+  status.style.display = 'block';
+  status.innerHTML     = `<span class="ocr-spinner"></span> Extraindo GPS e azimute da foto...`;
+
+  try {
+    const exifr = await loadExifr();
+
+    // Lê todos os campos GPS relevantes
+    const exif = await exifr.parse(file, {
+      gps: true,
+      tiff: true,
+      exif: true,
+      // campos explícitos que queremos
+      pick: [
+        'GPSLatitude','GPSLatitudeRef',
+        'GPSLongitude','GPSLongitudeRef',
+        'GPSImgDirection','GPSImgDirectionRef',
+        'GPSAltitude',
+        'DateTimeOriginal','Make','Model',
+      ]
+    });
+
+    if (!exif) throw new Error('Nenhum metadado EXIF encontrado nesta foto.');
+
+    const filled  = [];
+    const missing = [];
+
+    // ── Latitude ──────────────────────────────────────────
+    let lat = null;
+    if (exif.latitude !== undefined) {
+      lat = exif.latitude;  // exifr já converte para decimal
+    } else if (exif.GPSLatitude !== undefined) {
+      const [d, m, s] = exif.GPSLatitude;
+      lat = d + m/60 + s/3600;
+      if ((exif.GPSLatitudeRef || 'N') === 'S') lat = -lat;
+    }
+
+    // ── Longitude ─────────────────────────────────────────
+    let lon = null;
+    if (exif.longitude !== undefined) {
+      lon = exif.longitude;
+    } else if (exif.GPSLongitude !== undefined) {
+      const [d, m, s] = exif.GPSLongitude;
+      lon = d + m/60 + s/3600;
+      if ((exif.GPSLongitudeRef || 'W') === 'W') lon = -lon;
+    }
+
+    // ── Azimute (direção da câmera) ────────────────────────
+    let az = null;
+    if (exif.GPSImgDirection !== undefined) {
+      az = parseFloat(exif.GPSImgDirection);
+    }
+
+    // Preenche os campos
+    if (lat !== null && !isNaN(lat)) {
+      document.getElementById('fLat').value = lat.toFixed(6);
+      filled.push(`Lat: ${lat.toFixed(6)}`);
+    } else { missing.push('Latitude'); }
+
+    if (lon !== null && !isNaN(lon)) {
+      document.getElementById('fLon').value = lon.toFixed(6);
+      filled.push(`Lon: ${lon.toFixed(6)}`);
+    } else { missing.push('Longitude'); }
+
+    if (az !== null && !isNaN(az)) {
+      document.getElementById('fAzimute').value = az.toFixed(1);
+      document.getElementById('fAzimute').dispatchEvent(new Event('input'));
+      filled.push(`Az: ${az.toFixed(1)}°`);
+    } else { missing.push('Azimute (GPSImgDirection)'); }
+
+    // Info extra
+    const device   = [exif.Make, exif.Model].filter(Boolean).join(' ') || '—';
+    const datetime = exif.DateTimeOriginal
+      ? new Date(exif.DateTimeOriginal).toLocaleString('pt-BR')
+      : '—';
+    const alt = exif.GPSAltitude ? `${Math.round(exif.GPSAltitude)}m` : '—';
+
+    // Monta status
+    const okHtml  = filled.length  ? `✅ <b style="color:var(--accent);">Extraído:</b> ${filled.join(' · ')}<br>` : '';
+    const misHtml = missing.length ? `⚠️ <span style="color:var(--accent4);">Não encontrado: ${missing.join(', ')}</span><br>` : '';
+    const infoHtml = `<span style="color:var(--text3);font-size:11px;">
+      📱 ${device} &nbsp;·&nbsp; 🕐 ${datetime} &nbsp;·&nbsp; ⛰️ Alt: ${alt}
+    </span>`;
+
+    status.innerHTML = okHtml + misHtml + infoHtml;
+    label.innerHTML  = `📷 ${file.name.length > 36 ? file.name.slice(0,36)+'…' : file.name}`;
+
+    if (filled.length > 0) {
+      toast(`EXIF: ${filled.join(' · ')}`, 'success');
+    } else {
+      toast('Nenhum dado GPS encontrado no EXIF', 'error');
+    }
+
+    if (missing.includes('Azimute (GPSImgDirection)')) {
+      // Aviso amigável — campo raro, depende do app usado
+      status.innerHTML += `<br><span style="color:var(--text3);font-size:11px;">
+        💡 GPSImgDirection ausente — preencha o azimute manualmente.<br>
+        Apps como <b>Compass</b>, <b>GPS Logger</b> ou <b>FieldGenius</b> gravam este campo.
+      </span>`;
+    }
+
+  } catch (err) {
+    status.innerHTML = `❌ <span style="color:var(--danger);">${err.message}</span>`;
+    label.innerHTML  = '📷 Clique para selecionar uma foto';
+    toast('Erro EXIF: ' + err.message, 'error');
+  }
+
+  input.value = ''; // permite re-selecionar o mesmo arquivo
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+function init() {
+  map = L.map('map', { zoomControl: true }).setView([-23.26, -46.92], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://carto.com/">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Carrega dados da URL (compartilhamento)
+  const urlData = loadFromUrl();
+  if (urlData) {
+    STATE.pontos = urlData.pontos || [];
+    STATE.interseccoes = urlData.interseccoes || [];
+    STATE.centroidesPorAlvo = urlData.centroidesPorAlvo || {};
+    updateStatus();
+    toast('Dados carregados do link compartilhado!', 'success');
+    renderMap();
+  }
+
+  buildDefaultPtsGrid();
+  setupFormListeners();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MATH UTILS
+// ═══════════════════════════════════════════════════════════
+const deg2rad = d => d * Math.PI / 180;
+const rad2deg = r => r * 180 / Math.PI;
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function intersectTwoLines(p1, p2) {
+  try {
+    const latRef = (p1.lat + p2.lat) / 2;
+    const lonRef = (p1.lon + p2.lon) / 2;
+    const lat2m = 111320.0;
+    const lon2m = 111320.0 * Math.cos(deg2rad(latRef));
+
+    const toLocal = (lat, lon) => ({
+      x: (lon - lonRef) * lon2m,
+      y: (lat - latRef) * lat2m
+    });
+
+    const q1 = toLocal(p1.lat, p1.lon);
+    const q2 = toLocal(p2.lat, p2.lon);
+
+    const az1 = deg2rad(p1.azimute), az2 = deg2rad(p2.azimute);
+    const dx1 = Math.sin(az1), dy1 = Math.cos(az1);
+    const dx2 = Math.sin(az2), dy2 = Math.cos(az2);
+
+    const det = dx1*dy2 - dy1*dx2;
+    if (Math.abs(det) < 1e-10) return null;  // paralelas
+
+    const dx = q2.x - q1.x, dy = q2.y - q1.y;
+    const t1 = (dx*dy2 - dy*dx2) / det;
+
+    // Rejeita direção negativa (atrás do observador)
+    if (t1 < 0) return null;
+
+    const xI = q1.x + t1*dx1;
+    const yI = q1.y + t1*dy1;
+
+    const latI = latRef + yI / lat2m;
+    const lonI = lonRef + xI / lon2m;
+
+    const d1 = haversine(p1.lat, p1.lon, latI, lonI);
+    const d2 = haversine(p2.lat, p2.lon, latI, lonI);
+    if (d1 > 50000 || d2 > 50000) return null;
+
+    return { lat: latI, lon: lonI, d1, d2 };
+  } catch(e) {
+    return null;
+  }
+}
+
+// Ângulo entre dois azimutes (0-180)
+function anguloBetween(az1, az2) {
+  let diff = Math.abs(az1 - az2) % 360;
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  AUTO-UPDATE: chama após qualquer mudança nos pontos
+// ═══════════════════════════════════════════════════════════
+function autoUpdate(msg) {
+  runTriangulation(true);
+  renderMap(true);
+  updateStatus();
+  if (msg) toast(msg, 'success');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TRIANGULAÇÃO + CLUSTERIZAÇÃO DE ALVOS CANDIDATOS
+//
+//  Lógica:
+//  1. Calcula intersecções entre TODOS os pares de pontos
+//     (independente do nome do alvo informado).
+//  2. Filtra pares com ângulo < MIN_ANGLE (geometria instável).
+//  3. Agrupa intersecções próximas (< CLUSTER_RADIUS metros)
+//     pelo algoritmo de single-linkage simples.
+//  4. Cada cluster vira um "alvo candidato" com centróide
+//     ponderado pelo seno do ângulo entre os raios.
+//  5. Nome do alvo candidato = nome mais frequente entre os
+//     pontos que o compõem (ou "Alvo_1", "Alvo_2"…).
+// ═══════════════════════════════════════════════════════════
+const MIN_ANGLE     = 10;    // graus — rejeita pares quase paralelos
+const CLUSTER_RADIUS = 500;  // metros — intersecções dentro deste raio viram um cluster
+
+function runTriangulation(silent) {
+  STATE.interseccoes      = [];
+  STATE.centroidesPorAlvo = {};
+
+  if (STATE.pontos.length < 2) { updateStatus(); return 0; }
+
+  const pts = STATE.pontos;
+
+  // ── PASSO 1: todas as intersecções par-a-par ──────────────
+  const rawInters = [];
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const r = intersectTwoLines(pts[i], pts[j]);
+      if (!r) continue;
+
+      const angulo = anguloBetween(pts[i].azimute, pts[j].azimute);
+      if (angulo < MIN_ANGLE) continue;   // geometria muito rasa, descarta
+
+      const peso = Math.sin(deg2rad(angulo));  // seno do ângulo: máximo em 90°
+
+      rawInters.push({
+        lat:    r.lat,
+        lon:    r.lon,
+        angulo: angulo,
+        peso:   peso,
+        p1:     pts[i],
+        p2:     pts[j],
+      });
+    }
+  }
+
+  // Registra todas para exibição na tabela
+  rawInters.forEach((r, idx) => {
+    STATE.interseccoes.push({
+      nome:   `Inter_${idx + 1}`,
+      lat:    r.lat,
+      lon:    r.lon,
+      pontos: [r.p1.nome, r.p2.nome],
+      alvo:   r.p1.alvo === r.p2.alvo ? r.p1.alvo : `${r.p1.alvo} / ${r.p2.alvo}`,
+      angulo: r.angulo.toFixed(1),
+      peso:   r.peso.toFixed(3),
+    });
+  });
+
+  if (rawInters.length === 0) {
+    updateStatus();
+    if (!silent) toast('Nenhuma intersecção válida (verifique os azimutes)', 'error');
+    return 0;
+  }
+
+  // ── PASSO 2: clusterização por proximidade ────────────────
+  // Cada rawInter começa no seu próprio cluster
+  const clusterOf = rawInters.map((_, i) => i);
+
+  function findRoot(i) {
+    while (clusterOf[i] !== i) i = clusterOf[i];
+    return i;
+  }
+  function union(a, b) {
+    const ra = findRoot(a), rb = findRoot(b);
+    if (ra !== rb) clusterOf[ra] = rb;
+  }
+
+  for (let i = 0; i < rawInters.length; i++) {
+    for (let j = i + 1; j < rawInters.length; j++) {
+      const d = haversine(rawInters[i].lat, rawInters[i].lon,
+                          rawInters[j].lat, rawInters[j].lon);
+      if (d <= CLUSTER_RADIUS) union(i, j);
+    }
+  }
+
+  // Agrupa por root
+  const clusters = {};
+  rawInters.forEach((r, i) => {
+    const root = findRoot(i);
+    if (!clusters[root]) clusters[root] = [];
+    clusters[root].push(r);
+  });
+
+  // ── PASSO 3: centróide ponderado por cluster ──────────────
+  let candidateIdx = 1;
+  for (const members of Object.values(clusters)) {
+    const totalPeso = members.reduce((s, r) => s + r.peso, 0);
+    const cLat = members.reduce((s, r) => s + r.lat * r.peso, 0) / totalPeso;
+    const cLon = members.reduce((s, r) => s + r.lon * r.peso, 0) / totalPeso;
+
+    // RMS de dispersão
+    const dists = members.map(r => haversine(cLat, cLon, r.lat, r.lon));
+    const rms   = Math.sqrt(dists.reduce((s, d) => s + d * d, 0) / dists.length);
+
+    // Nome mais frequente entre os alvos dos pontos participantes
+    const nameCounts = {};
+    members.forEach(r => {
+      [r.p1.alvo, r.p2.alvo].forEach(a => {
+        if (a) nameCounts[a] = (nameCounts[a] || 0) + 1;
+      });
+    });
+    const nomeSugerido = Object.entries(nameCounts)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || `Alvo_${candidateIdx}`;
+
+    const key = `candidato_${candidateIdx}`;
+    STATE.centroidesPorAlvo[key] = {
+      lat:    cLat,
+      lon:    cLon,
+      alvo:   nomeSugerido,
+      nObs:   members.length,
+      rms:    rms.toFixed(1),
+      pontos: [...new Set(members.flatMap(r => [r.p1.nome, r.p2.nome]))],
+    };
+    candidateIdx++;
+  }
+
+  updateStatus();
+  if (!silent) toast(
+    `✅ ${STATE.interseccoes.length} intersecções → ${Object.keys(STATE.centroidesPorAlvo).length} alvo(s) candidato(s)`,
+    'success'
+  );
+  return STATE.interseccoes.length;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MAPA
+// ═══════════════════════════════════════════════════════════
+function clearMap() {
+  markers.forEach(m => map.removeLayer(m));
+  lines.forEach(l => map.removeLayer(l));
+  markers = []; lines = [];
+}
+
+function renderMap(silent) {
+  if (STATE.pontos.length === 0) { clearMap(); return; }
+  clearMap();
+
+  const allLats = STATE.pontos.map(p => p.lat);
+  const allLons = STATE.pontos.map(p => p.lon);
+  const cLat = allLats.reduce((a,b)=>a+b,0)/allLats.length;
+  const cLon = allLons.reduce((a,b)=>a+b,0)/allLons.length;
+  map.setView([cLat, cLon], 14);
+
+  const palette = ['#58a6ff','#3fb950','#f78166','#e3b341','#bc8cff','#79c0ff','#ffa657','#ff7b72'];
+
+  // Pontos de observação + raio de azimute
+  STATE.pontos.forEach((p, i) => {
+    const cor = palette[i % palette.length];
+    const dist = p.distancia || 8000;
+    const [latF, lonF] = azimuthPoint(p.lat, p.lon, p.azimute, dist);
+
+    const mk = L.circleMarker([p.lat, p.lon], {
+      radius: 7, color: cor, fillColor: cor, fillOpacity: 1, weight: 2
+    }).bindPopup(`<b>${p.nome}</b><br>
+      Az: ${p.azimute.toFixed(1)}° → <b>${p.alvo}</b><br>
+      ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}
+      ${p.distancia ? `<br>Dist: ${p.distancia}m` : ''}`);
+    mk.addTo(map); markers.push(mk);
+
+    const ln = L.polyline([[p.lat, p.lon],[latF, lonF]], {
+      color: cor, weight: 2, opacity: 0.65, dashArray: '6 5'
+    }).bindTooltip(`${p.nome} → ${p.alvo} | Az: ${p.azimute.toFixed(1)}°`);
+    ln.addTo(map); lines.push(ln);
+  });
+
+  // Intersecções individuais (pontos menores)
+  STATE.interseccoes.forEach(inter => {
+    const mk = L.circleMarker([inter.lat, inter.lon], {
+      radius: 4, color: '#666', fillColor: '#aaa', fillOpacity: 0.7, weight: 1
+    }).bindPopup(`<b>${inter.nome}</b><br>
+      Entre: ${inter.pontos.join(' & ')}<br>
+      Ângulo: ${inter.angulo}°<br>
+      Peso: ${inter.peso}<br>
+      ${inter.lat.toFixed(6)}, ${inter.lon.toFixed(6)}`);
+    mk.addTo(map); markers.push(mk);
+  });
+
+  // Alvos candidatos (destaque dourado)
+  Object.values(STATE.centroidesPorAlvo).forEach(cand => {
+    const mk = L.marker([cand.lat, cand.lon], {
+      icon: L.divIcon({
+        html: `<div style="
+          background:#e3b341;color:#000;font-weight:700;
+          font-size:11px;font-family:monospace;
+          padding:4px 8px;border-radius:6px;
+          box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          white-space:nowrap;border:2px solid #b8960a;
+        ">🎯 ${cand.alvo}</div>`,
+        className: '',
+        iconAnchor: [0, 0]
+      })
+    }).bindPopup(`<b>🎯 Alvo candidato: ${cand.alvo}</b><br>
+      ${cand.lat.toFixed(6)}, ${cand.lon.toFixed(6)}<br>
+      Pares: ${cand.nObs} &nbsp;|&nbsp; Pontos: ${cand.pontos.join(', ')}<br>
+      Erro RMS: <b>${cand.rms}m</b>`);
+    mk.addTo(map); markers.push(mk);
+  });
+
+  if (!silent) toast(`Mapa: ${STATE.pontos.length} pts · ${STATE.interseccoes.length} cruzamentos · ${Object.keys(STATE.centroidesPorAlvo).length} alvo(s)`, 'info');
+}
+
+function azimuthPoint(lat, lon, az, dist) {
+  const R = 6371000;
+  const lat1 = deg2rad(lat), lon1 = deg2rad(lon), b = deg2rad(az);
+  const d = dist / R;
+  const lat2 = Math.asin(Math.sin(lat1)*Math.cos(d) + Math.cos(lat1)*Math.sin(d)*Math.cos(b));
+  const lon2 = lon1 + Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(lat1), Math.cos(d)-Math.sin(lat1)*Math.sin(lat2));
+  return [rad2deg(lat2), rad2deg(lon2)];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PONTOS: CRUD
+// ═══════════════════════════════════════════════════════════
+function openAddPoint() {
+  STATE.editingIndex = null;
+  document.getElementById('addPointModalTitle').textContent = '➕ ADICIONAR PONTO';
+  document.getElementById('addPointBtn').textContent = 'Adicionar';
+  clearForm();
+  openModal('addPointModal');
+}
+
+function openEditPoint(idx) {
+  STATE.editingIndex = idx;
+  const p = STATE.pontos[idx];
+  document.getElementById('addPointModalTitle').textContent = '✏️ EDITAR PONTO';
+  document.getElementById('addPointBtn').textContent = 'Salvar';
+  document.getElementById('fName').value = p.nome;
+  document.getElementById('fLat').value = p.lat;
+  document.getElementById('fLon').value = p.lon;
+  document.getElementById('fAzimute').value = p.azimute;
+  document.getElementById('fAlvo').value = p.alvo;
+  if (p.distancia) {
+    document.getElementById('fUseDist').checked = true;
+    document.getElementById('fDist').style.display = 'block';
+    document.getElementById('fDist').value = p.distancia;
+  }
+  closeModal('viewDataModal');
+  openModal('addPointModal');
+}
+
+function duplicatePoint(idx) {
+  const p = STATE.pontos[idx];
+  STATE.editingIndex = null;
+  document.getElementById('addPointModalTitle').textContent = '📋 DUPLICAR PONTO';
+  document.getElementById('addPointBtn').textContent = 'Adicionar';
+  document.getElementById('fName').value = p.nome + '_copia';
+  document.getElementById('fLat').value = p.lat;
+  document.getElementById('fLon').value = p.lon;
+  document.getElementById('fAzimute').value = p.azimute;
+  document.getElementById('fAlvo').value = p.alvo;
+  if (p.distancia) {
+    document.getElementById('fUseDist').checked = true;
+    document.getElementById('fDist').style.display = 'block';
+    document.getElementById('fDist').value = p.distancia;
+  }
+  closeModal('viewDataModal');
+  openModal('addPointModal');
+}
+
+function deletePoint(idx) {
+  confirmAction('Remover ponto', `Remover "${STATE.pontos[idx].nome}"?`, () => {
+    STATE.pontos.splice(idx, 1);
+    refreshViewData();
+    autoUpdate('Ponto removido');
+  });
+}
+
+function submitPoint() {
+  const nome = document.getElementById('fName').value.trim();
+  const lat  = parseFloat(document.getElementById('fLat').value);
+  const lon  = parseFloat(document.getElementById('fLon').value);
+  const az   = parseFloat(document.getElementById('fAzimute').value);
+  const alvo = document.getElementById('fAlvo').value.trim() || `Alvo_${STATE.pontos.length+1}`;
+  const useDist = document.getElementById('fUseDist').checked;
+  const dist = useDist ? parseFloat(document.getElementById('fDist').value) : null;
+
+  if (!nome) { toast('Nome obrigatório', 'error'); return; }
+  if (isNaN(lat)||lat<-90||lat>90) { toast('Latitude inválida', 'error'); return; }
+  if (isNaN(lon)||lon<-180||lon>180) { toast('Longitude inválida', 'error'); return; }
+  if (isNaN(az)||az<0||az>360) { toast('Azimute inválido (0-360)', 'error'); return; }
+  if (useDist && (isNaN(dist)||dist<=0)) { toast('Distância inválida', 'error'); return; }
+
+  const isEdit = STATE.editingIndex !== null;
+
+  // Verifica duplicata de nome (exceto se editando o mesmo)
+  const dup = STATE.pontos.findIndex(p => p.nome === nome);
+  if (dup !== -1 && dup !== STATE.editingIndex) { toast(`Nome "${nome}" já existe`, 'error'); return; }
+
+  const ponto = { nome, lat, lon, azimute: az, alvo, distancia: dist||null, ts: new Date().toLocaleString() };
+
+  if (isEdit) {
+    STATE.pontos[STATE.editingIndex] = ponto;
+    toast(`Ponto "${nome}" atualizado`, 'success');
+  } else {
+    STATE.pontos.push(ponto);
+    toast(`Ponto "${nome}" adicionado`, 'success');
+  }
+
+  closeModal('addPointModal');
+  clearForm();
+  autoUpdate(isEdit ? `"${nome}" atualizado` : `"${nome}" adicionado`);
+}
+
+function clearForm() {
+  ['fName','fLat','fLon','fAzimute','fAlvo','fDist'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fUseDist').checked = false;
+  document.getElementById('fDist').style.display = 'none';
+  document.getElementById('fAzDir').textContent = '—';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PONTOS PADRÃO
+// ═══════════════════════════════════════════════════════════
+function buildDefaultPtsGrid() {
+  const grid = document.getElementById('defaultPtsGrid');
+  grid.innerHTML = '';
+  PONTOS_PADRAO.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'default-pt-btn';
+    btn.innerHTML = `<b>${p.nome}</b>${p.descricao}`;
+    btn.onclick = () => {
+      document.getElementById('fName').value = p.nome;
+      document.getElementById('fLat').value = p.lat;
+      document.getElementById('fLon').value = p.lon;
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VER DADOS
+// ═══════════════════════════════════════════════════════════
+function showViewData() {
+  refreshViewData();
+  openModal('viewDataModal');
+}
+
+function refreshViewData() {
+  const ptsDiv = document.getElementById('viewPts');
+  const interDiv = document.getElementById('viewInter');
+
+  if (STATE.pontos.length === 0) {
+    ptsDiv.innerHTML = '<div class="empty-state"><i class="fas fa-map-pin"></i>Nenhum ponto cadastrado</div>';
+  } else {
+    ptsDiv.innerHTML = '';
+    STATE.pontos.forEach((p, i) => {
+      ptsDiv.innerHTML += `
+        <div class="point-card">
+          <div class="point-card-head">
+            <span class="point-card-name">${p.nome}</span>
+            <div class="point-card-actions">
+              <button class="card-act-btn" onclick="openEditPoint(${i})" title="Editar"><i class="fas fa-pen"></i></button>
+              <button class="card-act-btn" onclick="duplicatePoint(${i})" title="Duplicar"><i class="fas fa-copy"></i></button>
+              <button class="card-act-btn del" onclick="deletePoint(${i})" title="Remover"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="point-card-meta">
+            ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}<br>
+            Az: ${p.azimute.toFixed(1)}° → <span style="color:var(--accent2)">${p.alvo}</span>
+            ${p.distancia ? `<br>Dist: ${p.distancia}m` : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  const nCent = Object.keys(STATE.centroidesPorAlvo).length;
+  if (STATE.interseccoes.length === 0 && nCent === 0) {
+    interDiv.innerHTML = '<div class="empty-state"><i class="fas fa-crosshairs"></i>Nenhuma intersecção — adicione pelo menos 2 pontos</div>';
+  } else {
+    interDiv.innerHTML = '';
+
+    // Alvos candidatos (clusters)
+    if (nCent > 0) {
+      Object.values(STATE.centroidesPorAlvo).forEach(cand => {
+        const rmsF = parseFloat(cand.rms);
+        const rmsCls = rmsF < 50 ? 'precision-good' : rmsF < 200 ? 'precision-ok' : 'precision-bad';
+        interDiv.innerHTML += `
+          <div class="inter-card" style="border-color:rgba(227,179,65,0.4);background:rgba(227,179,65,0.05);margin-bottom:10px;">
+            <div class="inter-card-name" style="color:var(--accent4);">
+              🎯 ${cand.alvo}
+              <span class="centroid-badge">ALVO CANDIDATO</span>
+            </div>
+            <div class="inter-card-meta">
+              📍 ${cand.lat.toFixed(6)}, ${cand.lon.toFixed(6)}<br>
+              Pares: ${cand.nObs} &nbsp;·&nbsp; Pontos: ${cand.pontos.join(', ')}<br>
+              Erro RMS: <span class="${rmsCls}"><b>${cand.rms}m</b></span>
+            </div>
+          </div>`;
+      });
+    }
+
+    // Todas as intersecções par-a-par
+    if (STATE.interseccoes.length > 0) {
+      interDiv.innerHTML += `<div class="section-title" style="margin:14px 0 10px;">Todos os pares (${STATE.interseccoes.length})</div>`;
+      STATE.interseccoes.forEach(inter => {
+        const ang = parseFloat(inter.angulo);
+        const angCls = ang > 30 && ang < 150 ? 'precision-good' : 'precision-ok';
+        interDiv.innerHTML += `
+          <div class="inter-card" style="margin-bottom:6px;padding:9px 12px;">
+            <div class="inter-card-meta" style="line-height:1.9;">
+              <b style="color:var(--text);">${inter.pontos.join(' x ')}</b><br>
+              📍 ${inter.lat.toFixed(6)}, ${inter.lon.toFixed(6)}<br>
+              Ângulo: <span class="${angCls}">${inter.angulo}°</span>
+              &nbsp;·&nbsp; Peso: ${inter.peso}
+            </div>
+          </div>`;
+      });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHARE / IMPORT / EXPORT
+// ═══════════════════════════════════════════════════════════
+function shareData() {
+  if (STATE.pontos.length === 0) { toast('Nenhum dado para compartilhar', 'error'); return; }
+  const payload = JSON.stringify({
+    pontos: STATE.pontos,
+    interseccoes: STATE.interseccoes,
+    centroidesPorAlvo: STATE.centroidesPorAlvo,
+  });
+  const b64 = btoa(unescape(encodeURIComponent(payload)));
+  const url = window.location.href.split('?')[0] + '?d=' + b64;
+  document.getElementById('shareUrlBox').textContent = url;
+  openModal('shareModal');
+}
+
+function copyShareUrl() {
+  const url = document.getElementById('shareUrlBox').textContent;
+  navigator.clipboard.writeText(url).then(() => toast('Link copiado!', 'success'));
+}
+
+function loadFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const d = params.get('d');
+  if (!d) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(d)));
+    return JSON.parse(json);
+  } catch(e) {
+    toast('Erro ao carregar link', 'error');
+    return null;
+  }
+}
+
+function saveData() {
+  if (STATE.pontos.length === 0) { toast('Nenhum dado para exportar', 'error'); return; }
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const blob = new Blob([JSON.stringify({
+    pontos: STATE.pontos,
+    interseccoes: STATE.interseccoes,
+    centroidesPorAlvo: STATE.centroidesPorAlvo,
+  }, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `japi_triangulacao_${ts}.json`;
+  a.click();
+  toast('JSON exportado!', 'success');
+}
+
+function loadFromFile() {
+  const f = document.getElementById('fFile').files[0];
+  if (!f) { toast('Selecione um arquivo', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      STATE.pontos = data.pontos || [];
+      STATE.interseccoes = data.interseccoes || [];
+      STATE.centroidesPorAlvo = data.centroidesPorAlvo || {};
+      updateStatus();
+      closeModal('loadDataModal');
+      toast(`Carregado: ${STATE.pontos.length} pontos`, 'success');
+    } catch(err) {
+      toast('Erro ao ler arquivo JSON', 'error');
+    }
+  };
+  reader.readAsText(f);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// Close on backdrop click
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('active'); });
+});
+
+function confirmAction(title, msg, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmYes').onclick = () => { cb(); closeModal('confirmModal'); };
+  openModal('confirmModal');
+}
+
+function confirmClear() {
+  confirmAction('Limpar todos os dados',
+    `Remover ${STATE.pontos.length} pontos e ${STATE.interseccoes.length} intersecções?`,
+    () => {
+      STATE.pontos = []; STATE.interseccoes = []; STATE.centroidesPorAlvo = {};
+      clearMap(); updateStatus();
+      toast('Dados limpos', 'info');
+    }
+  );
+}
+
+function updateStatus() {
+  document.getElementById('statPts').textContent    = STATE.pontos.length;
+  document.getElementById('statInter').textContent  = STATE.interseccoes.length;
+  document.getElementById('statCentroid').textContent = Object.keys(STATE.centroidesPorAlvo).length;
+}
+
+function toast(msg, type='info') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function toggleInstructions() {
+  document.getElementById('instrPanel').classList.toggle('open');
+}
+
+function setupFormListeners() {
+  document.getElementById('fAzimute').addEventListener('input', function() {
+    const az = parseFloat(this.value);
+    const dirs = {0:'Norte ↑',90:'Leste →',180:'Sul ↓',270:'Oeste ←'};
+    let label = '—';
+    if (!isNaN(az) && az>=0 && az<=360) {
+      if (dirs[az]) label = dirs[az];
+      else if (az<90) label = 'Nordeste ↗';
+      else if (az<180) label = 'Sudeste ↘';
+      else if (az<270) label = 'Sudoeste ↙';
+      else label = 'Noroeste ↖';
+    }
+    document.getElementById('fAzDir').textContent = label;
+  });
+
+  document.getElementById('fUseDist').addEventListener('change', function() {
+    document.getElementById('fDist').style.display = this.checked ? 'block' : 'none';
+  });
+}
+
+// Wire nav buttons
+document.querySelector('[onclick="openModal(\'addPointModal\')"]').onclick = openAddPoint;
+document.querySelector('[onclick="openModal(\'viewDataModal\')"]').onclick = showViewData;
+
+// Init
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
