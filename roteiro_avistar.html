@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Construtor de Roteiro — Avistar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;color:#1a1a1a;background:#f5f5f2;padding:1.5rem}
+h1{font-size:20px;font-weight:500;margin-bottom:1.25rem;color:#1a1a1a}
+.search-bar{display:flex;gap:8px;margin-bottom:1rem}
+.search-bar input{flex:1;padding:9px 12px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px}
+.search-bar input:focus{outline:none;border-color:#7F77DD}
+.search-bar button{padding:9px 18px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;font-size:14px;white-space:nowrap}
+.search-bar button:hover{background:#f0f0f0}
+.tags-area{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem;min-height:32px}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#EEEDFE;border:1px solid #AFA9EC;color:#3C3489}
+.tag .x{cursor:pointer;opacity:0.6;font-size:10px}
+.tag .x:hover{opacity:1}
+.filters{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.filters select{padding:7px 10px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-size:13px}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem}
+.results-header span{font-size:13px;color:#666}
+.results-header button{padding:6px 14px;font-size:12px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
+.results-header button:hover{background:#f0f0f0}
+.card{border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:#fff;transition:border-color .15s}
+.card:hover{border-color:#aaa}
+.card.selected{border-color:#7F77DD;background:#EEEDFE}
+.card.selected .card-titulo{color:#3C3489}
+.card-check{width:18px;height:18px;border-radius:4px;border:1px solid #ccc;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:11px;background:#fff}
+.card.selected .card-check{background:#7F77DD;border-color:#7F77DD;color:white}
+.card-body{flex:1;min-width:0}
+.card-titulo{font-size:14px;font-weight:500;margin-bottom:4px;line-height:1.4}
+.card-meta{font-size:12px;color:#666;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-aud{background:#E1F5EE;color:#085041}
+.badge-dia{background:#FAEEDA;color:#633806}
+.badge-hora{background:#E6F1FB;color:#0C447C}
+.conflict{background:#FCEBEB;border-radius:4px;padding:2px 6px;font-size:11px;color:#791F1F;margin-left:6px}
+.divider{border:none;border-top:1px solid #e0e0e0;margin:1.5rem 0}
+.roteiro-section{margin-top:1rem}
+.roteiro-title{font-size:15px;font-weight:500;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between}
+.roteiro-title .count{font-size:12px;font-weight:400;color:#666}
+.roteiro-day{margin-bottom:1rem}
+.roteiro-day-label{font-size:12px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e0e0e0}
+.roteiro-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.roteiro-item:last-child{border-bottom:none}
+.roteiro-time{font-size:12px;color:#666;min-width:42px;font-weight:500;padding-top:1px}
+.roteiro-info{flex:1}
+.roteiro-info .t{font-size:13px;font-weight:500;line-height:1.35}
+.roteiro-info .s{font-size:12px;color:#666;margin-top:2px}
+.btn-export{margin-top:1rem;padding:10px 16px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;font-size:13px;width:100%}
+.btn-export:hover{background:#f0f0f0}
+.empty{text-align:center;color:#aaa;font-size:13px;padding:2rem 0}
+mark{background:#FAC775;border-radius:2px;padding:0 1px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+.panel{background:#fff;border-radius:12px;border:1px solid #e0e0e0;padding:1.25rem}
+@media(max-width:700px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>Construtor de Roteiro — Avistar</h1>
+<div class="layout">
+<div class="panel">
+  <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;color:#444">Buscar por palavra-chave</div>
+  <div class="search-bar">
+    <input id="kw-input" type="text" placeholder="ex: conservação, fotografia, arara..." />
+    <button onclick="addKeyword()">Adicionar</button>
+  </div>
+  <div class="tags-area" id="tags-area"></div>
+  <div class="filters">
+    <select id="filter-dia" onchange="render()">
+      <option value="">Todos os dias</option>
+      <option value="15">Dia 15</option>
+      <option value="16">Dia 16</option>
+      <option value="17">Dia 17</option>
+    </select>
+    <select id="filter-aud" onchange="render()">
+      <option value="">Todos os auditórios</option>
+    </select>
+  </div>
+  <div class="results-header">
+    <span id="results-count">—</span>
+    <button onclick="addAll()">Adicionar todos ↗</button>
+  </div>
+  <div id="results-list"></div>
+</div>
+
+<div class="panel">
+  <div class="roteiro-title">
+    Meu roteiro
+    <span class="count" id="roteiro-count">0 sessões</span>
+  </div>
+  <div id="roteiro-list"><div class="empty">Nenhuma sessão adicionada ainda</div></div>
+  <button class="btn-export" onclick="exportRoteiro()">⬇ Exportar roteiro como .txt</button>
+</div>
+</div>
+
+<script>
+const DATA = [{"dia":"15","hora":"09:30","auditorio":"C1","nome":"Tom Adnet","titulo":"Passarinho Verde: Aves da Flona do Purus"},{"dia":"15","hora":"10:00","auditorio":"C1","nome":"fgorleri","titulo":"Grabando Aves: sonidos que conectam"},{"dia":"15","hora":"10:30","auditorio":"C1","nome":"Fabio Schunck","titulo":"Movimentações urbanas de marrecas anilhadas"},{"dia":"15","hora":"11:00","auditorio":"C1","nome":"Anelisa Magalhães","titulo":"15 Anos monitorando aves na cidade de São Paulo"},{"dia":"15","hora":"11:30","auditorio":"C1","nome":"Sayonara Induzzi Cometti","titulo":"Observação de aves em áreas naturais protegidas"},{"dia":"15","hora":"13:30","auditorio":"C1","nome":"Gustavo F Diniz","titulo":"Variação de plumagem: Corujinha-do-mato."},{"dia":"15","hora":"14:00","auditorio":"C1","nome":"Marcelo Lisita","titulo":"Aves da bacia do rio Araguaia"},{"dia":"15","hora":"14:30","auditorio":"C1","nome":"Kassius Santos","titulo":"Endemismo do Altos de Lumiar Birding"},{"dia":"15","hora":"15:00","auditorio":"C1","nome":"Lucas Carrara","titulo":"A saga do pato-mergulhão"},{"dia":"15","hora":"16:00","auditorio":"C1","nome":"Melissa Alves","titulo":"O poder da ornitologia entre biomas e continentes"},{"dia":"15","hora":"16:30","auditorio":"C1","nome":"Lívia Guimarães","titulo":"Hábito alimentar influencia a morfologia craniana?"},{"dia":"15","hora":"17:00","auditorio":"C1","nome":"Antonio L. Maia Neto","titulo":"Reserva Espinita e Conservação das Aves"},{"dia":"15","hora":"17:30","auditorio":"C2","nome":"Flávia Müller","titulo":"Educação Ambiental - Desafios Atuais"},{"dia":"15","hora":"09:30","auditorio":"C2","nome":"Rochely","titulo":"Projeto ambiental x ESG das empresas"},{"dia":"15","hora":"10:00","auditorio":"C2","nome":"Melissa Alves","titulo":"CBRO: novo núcleo de comunicação"},{"dia":"15","hora":"10:15","auditorio":"C2","nome":"Melissa Alves","titulo":"Aves que encantam: Cunhataí Porã"},{"dia":"15","hora":"10:30","auditorio":"C2","nome":"Angélica Vilas Boas","titulo":"Ornito Pantanal"},{"dia":"15","hora":"10:45","auditorio":"C2","nome":"Rebeca Braga","titulo":"Guia de aves da RPPN Dr. Daisaku Ikeda"},{"dia":"15","hora":"11:00","auditorio":"C2","nome":"Marcelo Lisita","titulo":"Aves do Parque Estadual Águas do Paraíso"},{"dia":"15","hora":"11:15","auditorio":"C2","nome":"Amer Cavalcant","titulo":"Aves do Equador"},{"dia":"15","hora":"11:30","auditorio":"C2","nome":"Alex Mesquita","titulo":"Guiando e passarinhando na América Latina"},{"dia":"15","hora":"13:00","auditorio":"C2","nome":"Marcelo Silva","titulo":"AVIFAUNA DA REVIS SERRA DAS ARARAS"},{"dia":"15","hora":"13:15","auditorio":"C2","nome":"Kauan Florentino","titulo":"Avifauna no Médio Vale Paraíba (RJ)"},{"dia":"15","hora":"13:30","auditorio":"C2","nome":"Karlla Barbosa - med","titulo":"Voos e acordos: legado COP15"},{"dia":"15","hora":"14:15","auditorio":"C2","nome":"Eduardo G. Santos","titulo":"O Mistério do Ovo Extra"},{"dia":"15","hora":"14:30","auditorio":"C2","nome":"Isadora Zavan Santieff","titulo":"Exceção à monogamia em sabiás-barranco"},{"dia":"15","hora":"14:45","auditorio":"C2","nome":"Isabella A.","titulo":"Redes sociais e a ciência colaborativa"},{"dia":"15","hora":"15:00","auditorio":"C2","nome":"Lua Bissoli Silva","titulo":"Que Caatinga é essa?"},{"dia":"15","hora":"15:15","auditorio":"C2","nome":"Daniela Gerdenits","titulo":"Experiência de observação: o que vale a pena?"},{"dia":"15","hora":"15:30","auditorio":"C2","nome":"Larissa Amaral","titulo":"Imersão Científica em Noronha"},{"dia":"15","hora":"16:00","auditorio":"C2","nome":"Laura Falcão","titulo":"Espionagem de chamados de alerta"},{"dia":"15","hora":"16:15","auditorio":"C2","nome":"Pedro Vogeley","titulo":"A história evolutiva da rolinha-do-planalto"},{"dia":"15","hora":"16:30","auditorio":"C2","nome":"Victor H. Reis","titulo":"Reprodução da rolinha-roxa na cidade"},{"dia":"15","hora":"16:45","auditorio":"C2","nome":"Guto Pötter","titulo":"Observação de anting em casaca-de-couro-de-crista"},{"dia":"15","hora":"17:00","auditorio":"C2","nome":"Amanda Cherutte","titulo":"Florivoria de Papagaios em Exóticas"},{"dia":"15","hora":"17:30","auditorio":"C2","nome":"Tarso Ciolete","titulo":"Como anilhar uma Seriema?"},{"dia":"15","hora":"17:45","auditorio":"C2","nome":"Rodrigo M Aguiar","titulo":"Circovirus e conservação de Psittaciformes"},{"dia":"15","hora":"09:30","auditorio":"DS","nome":"Augusto Matheus","titulo":"Monitoramento de Aves - Fundação Florestal"},{"dia":"15","hora":"10:00","auditorio":"DS","nome":"Gustavo Alexandre","titulo":"A história do Caderno de Aves da APA do Carmo"},{"dia":"15","hora":"10:30","auditorio":"DS","nome":"João Ferraz","titulo":"Muriquis e Rodovias na Serra do Mar"},{"dia":"15","hora":"11:00","auditorio":"DS","nome":"Ana Madalhano","titulo":"Floresta e renda: bioeconomia como aliada da conservação da biodiversidade"},{"dia":"15","hora":"11:15","auditorio":"DS","nome":"Daniela Bueno","titulo":"Fiscalizar a criação amadora é proteger aves"},{"dia":"15","hora":"11:30","auditorio":"DS","nome":"Eduardo Araujo","titulo":"Radar da Conservação"},{"dia":"15","hora":"13:30","auditorio":"DS","nome":"Affonso Souza","titulo":"Colisões em vidros - aplicativo para reportes"},{"dia":"15","hora":"14:00","auditorio":"DS","nome":"Otávio Rocha","titulo":"Ações Pró-Aves: caminhos para a coexistência"},{"dia":"15","hora":"14:30","auditorio":"DS","nome":"Luiza Figueira","titulo":"Comunicação unificada para conservação"},{"dia":"15","hora":"14:45","auditorio":"DS","nome":"Alec Tassoni","titulo":"SAVE Brasil: Ações do PAN Aves da Mata Atlântica"},{"dia":"15","hora":"15:00","auditorio":"DS","nome":"Bianca Fernandes","titulo":"Projeto Cara-suja: conservação na Mata Atlântica"},{"dia":"15","hora":"15:30","auditorio":"DS","nome":"Vanessa Kanaan","titulo":"Vem Passarinhar Santa Catarina"},{"dia":"15","hora":"15:45","auditorio":"DS","nome":"João P. Pontini","titulo":"Passarinhar e Educar: Educação Ambiental e Pesquisa"},{"dia":"15","hora":"16:00","auditorio":"DS","nome":"Elenise Sipinski (Tise)","titulo":"Trajetoria do projeto papagaio-de-cara-roxa"},{"dia":"15","hora":"16:30","auditorio":"DS","nome":"Roberta Boss","titulo":"Monitoramento de Amazona brasiliensis e A. vinacea"},{"dia":"15","hora":"17:00","auditorio":"DS","nome":"Gabriel Falquetto","titulo":"Bandos mistos da Saíra-apunhalada"},{"dia":"15","hora":"17:15","auditorio":"DS","nome":"Lucas Tonoli","titulo":"A trajetória científica da Saíra-apunhalada"},{"dia":"15","hora":"17:30","auditorio":"DS","nome":"Matheus Clemente","titulo":"Turismo Científico na RPPN Kaetés"},{"dia":"15","hora":"09:00","auditorio":"Avistar","nome":"Avistar","titulo":"Avistar20Anos"},{"dia":"15","hora":"10:10","auditorio":"Avistar","nome":"Diego Calderón-Franco","titulo":"Pajareando con las FARC"},{"dia":"15","hora":"10:45","auditorio":"Avistar","nome":"Pamela Garcia","titulo":"Mujeres Volando con las Aves"},{"dia":"15","hora":"11:15","auditorio":"Avistar","nome":"Letícia Keiko","titulo":"O que aves fêmeas nos contam sobre viés de gênero?"},{"dia":"15","hora":"13:00","auditorio":"Avistar","nome":"Simpósio CRBio 01","titulo":"A contribuição dos biólogos com ciência, pesquisa, inovação e empreendedorismo"},{"dia":"15","hora":"13:05","auditorio":"Avistar","nome":"Alexandre Aleixo","titulo":"O consórcio Genômica da Biodiversidade Brasileira (GBB)"},{"dia":"15","hora":"13:30","auditorio":"Avistar","nome":"Fernanda Abra","titulo":"ViaFAUNA & Reconecta: um casamento entre a consultoria e a pesquisa"},{"dia":"15","hora":"14:00","auditorio":"Avistar","nome":"Neiva Guedes","titulo":"As grandes araras como mensageiras de uma só saúde"},{"dia":"15","hora":"14:30","auditorio":"Avistar","nome":"Rodrigo Agostinho","titulo":"O papel do biólogo e a conservação da biodiversidade."},{"dia":"15","hora":"15:00","auditorio":"Avistar","nome":"Angélica Vilas Boas","titulo":"Implicações das alterações hidroclimáticas na dinâmica das aves em áreas úmidas"},{"dia":"15","hora":"16:00","auditorio":"Avistar","nome":"Eliza Mense e Danusa Maia","titulo":"O papel do CRBio-01 ampliando as realizações através do Patrocínio"},{"dia":"15","hora":"16:30","auditorio":"Avistar","nome":"Biólog@s e Conselheiros CRBio-01","titulo":"BioAves e CRBio-01: biólog@s e sociedade pela ciência cidadã e as aves"},{"dia":"16","hora":"09:00","auditorio":"C1","nome":"Thiago Negretti","titulo":"Otimizando Edição Fotográfica de Aves"},{"dia":"16","hora":"09:30","auditorio":"C1","nome":"J. Quental","titulo":"I.A. fotografia, aves e quimeras"},{"dia":"16","hora":"10:30","auditorio":"C1","nome":"Jim Aranha","titulo":"Plantando escutas de passarinho no JB-RJ"},{"dia":"16","hora":"11:00","auditorio":"C1","nome":"Ismael Franz","titulo":"O calendário das aves"},{"dia":"16","hora":"11:30","auditorio":"C1","nome":"Laura Lopes","titulo":"Sabiás têm sotaques no canto?"},{"dia":"16","hora":"11:45","auditorio":"C1","nome":"João Menezes","titulo":"Quem canta mais alto?"},{"dia":"16","hora":"13:00","auditorio":"C1","nome":"Nondas Okiama","titulo":"ICB - Um futuro onde crianças observam passarinhos"},{"dia":"16","hora":"13:30","auditorio":"C1","nome":"Peter Estermann","titulo":"Destinos e Longevidade no Birding"},{"dia":"16","hora":"14:00","auditorio":"C1","nome":"Nathália Diniz","titulo":"Beija-flor é tudo briguento mesmo?"},{"dia":"16","hora":"14:30","auditorio":"C1","nome":"Júlia Finger","titulo":"Passarinhando nas Ilhas Malvinas e Geórgia do Sul"},{"dia":"16","hora":"15:00","auditorio":"C1","nome":"Kacau Oliveira","titulo":"Expedições de Impacto"},{"dia":"16","hora":"15:30","auditorio":"C1","nome":"Weber Girão","titulo":"Quando flamingos eram maranhões"},{"dia":"16","hora":"16:00","auditorio":"C1","nome":"Tony Bichinski","titulo":"Apresentação da Oologia Brasilica"},{"dia":"16","hora":"16:30","auditorio":"C1","nome":"Rogério Siqueira","titulo":"O papel do Jornalismo na Observação de Aves"},{"dia":"16","hora":"17:00","auditorio":"C1","nome":"Alex Mesquita","titulo":"Aves que falam espanhol - experiência de birding na América Latina"},{"dia":"16","hora":"17:30","auditorio":"C1","nome":"Gabriel Marchi","titulo":"O audiovisual na Conservação de Aves"},{"dia":"16","hora":"09:00","auditorio":"C2","nome":"Celina Keiko Yoshihara","titulo":"Fauna e Gestão do Cemitério Cerejeiras"},{"dia":"16","hora":"09:15","auditorio":"C2","nome":"Alessandro Allegretti","titulo":"Morro do Leme (RJ): paisagem e aves."},{"dia":"16","hora":"09:30","auditorio":"C2","nome":"Nascim","titulo":"Canoagem & Ecoturismo Avistamento de pássaros"},{"dia":"16","hora":"09:45","auditorio":"C2","nome":"Jefferson Bob","titulo":"Sítio Pau Preto - Referência no Nordeste"},{"dia":"16","hora":"10:00","auditorio":"C2","nome":"Nathália Flôres","titulo":"Passarinhando nas UCs da Paraíba!"},{"dia":"16","hora":"10:15","auditorio":"C2","nome":"Samir Mansur","titulo":"Pios de Aves - Resignificando atos"},{"dia":"16","hora":"10:30","auditorio":"C2","nome":"Tück","titulo":"Atibaia como roteiro de birdwatching"},{"dia":"16","hora":"10:45","auditorio":"C2","nome":"Giovanni B. Pupin","titulo":"10 Anos de #VemPassarinharSampa"},{"dia":"16","hora":"11:30","auditorio":"C2","nome":"Giovana Souza","titulo":"Seis anos de convivência com um Antpitta"},{"dia":"16","hora":"11:45","auditorio":"C2","nome":"Ana Domingues","titulo":"Aves da Uniso"},{"dia":"16","hora":"13:00","auditorio":"C2","nome":"Fabrício Yanes","titulo":"Monitoramento Participativo das Jacutingas de Ilhabela"},{"dia":"16","hora":"13:15","auditorio":"C2","nome":"Pedro Nassar","titulo":"Aves limícolas na região de Tefé - Amazonas"},{"dia":"16","hora":"13:30","auditorio":"C2","nome":"Isabella Limão","titulo":"Registros que produzem ciência"},{"dia":"16","hora":"13:45","auditorio":"C2","nome":"Pedro Sabino e Bernardo Sabino","titulo":"Bird Bros"},{"dia":"16","hora":"14:00","auditorio":"C2","nome":"Enrico Tosto","titulo":"ampBio: Aliando pessoas com a Natureza"},{"dia":"16","hora":"14:15","auditorio":"C2","nome":"Lu Oshiro","titulo":"Conservação e paisagens fragmentadas"},{"dia":"16","hora":"14:30","auditorio":"C2","nome":"Julia Monteiro","titulo":"Festival dos Papagaios: União que Transforma"},{"dia":"16","hora":"14:45","auditorio":"C2","nome":"Victória Pinheiro","titulo":"Mulheres e Fauna Terrestre"},{"dia":"16","hora":"15:00","auditorio":"C2","nome":"P. Giannotti","titulo":"Antigo e novos habitantes do PARNASO"},{"dia":"16","hora":"15:15","auditorio":"C2","nome":"Isadora Parra","titulo":"Aves do Cerrado: remanescentes em Botucatu"},{"dia":"16","hora":"15:30","auditorio":"C2","nome":"Pedro Vogeley","titulo":"Aves da Fazenda Pontal, Corumbaíba (GO)"},{"dia":"16","hora":"16:00","auditorio":"C2","nome":"Rafaela Serafim","titulo":"Aves da minha RC: um olhar para o comum"},{"dia":"16","hora":"16:15","auditorio":"C2","nome":"Letícia Keiko","titulo":"A vida entre os talhões: a avifauna da EEFCI"},{"dia":"16","hora":"16:30","auditorio":"C2","nome":"Leonardo Lopes","titulo":"Combatendo a síndrome da mudança de referencial"},{"dia":"16","hora":"16:45","auditorio":"C2","nome":"Ana Laura","titulo":"Monitoramento de fauna em corredores restaurados"},{"dia":"16","hora":"17:00","auditorio":"C2","nome":"Gabriela Rosa","titulo":"Projetando corredores urbanos para aves e pessoas"},{"dia":"16","hora":"17:15","auditorio":"C2","nome":"Thiago Catharino","titulo":"Por onde anda o mico-leão-preto na Lagoa do Sino?"},{"dia":"16","hora":"17:30","auditorio":"C2","nome":"Giovanna Dumere","titulo":"Penas para além da beleza"},{"dia":"16","hora":"09:00","auditorio":"DS","nome":"Luciana Veríssimo, Dennis Hyde e Cristiane Leme","titulo":"Contribuições econômicas do turismo de observação de vida silvestre na Bahia"},{"dia":"16","hora":"09:30","auditorio":"DS","nome":"Kenny Uesléi","titulo":"24h na Pousada PiraAçu."},{"dia":"16","hora":"10:00","auditorio":"DS","nome":"Lourinho Reis","titulo":"Passarinhando nos Jardins da Arara-de-Lear: Turismo, Conservação e Experiência Ancestral"},{"dia":"16","hora":"10:30","auditorio":"DS","nome":"Douglas Santos","titulo":"Expedição Mantiqueira - aves de altitude"},{"dia":"16","hora":"11:00","auditorio":"DS","nome":"João Ferreira","titulo":"Entre Cantos e cores. A riqueza das aves em Pedreira e região"},{"dia":"16","hora":"11:30","auditorio":"DS","nome":"Jefferson Bob","titulo":"Sítio Pau Preto - Hospedagem domiciliar e turismo de natureza."},{"dia":"16","hora":"13:30","auditorio":"DS","nome":"Fred Crema","titulo":"Observando aves na Colombia"},{"dia":"16","hora":"14:00","auditorio":"DS","nome":"Luiz Alberto Santos","titulo":"Aves do sertão do Alto São Francisco"},{"dia":"16","hora":"14:30","auditorio":"DS","nome":"Edu Franco","titulo":"Lançamento Associação Brasil Silvestre"},{"dia":"16","hora":"15:00","auditorio":"DS","nome":"Fábio Barata","titulo":"Mochileiros Pousada: Um Caso Real de Turismo de Observação de Aves"},{"dia":"16","hora":"15:30","auditorio":"DS","nome":"Alex Mesquita","titulo":"Das montanhas ao litoral, as joias da Costa Rica"},{"dia":"16","hora":"16:00","auditorio":"DS","nome":"Raul Pommer","titulo":"Resex do Lago do Cuniã, Porto Velho/RO"},{"dia":"16","hora":"16:30","auditorio":"DS","nome":"Cristine Prates","titulo":"Chapada Diamantina - Bahia"},{"dia":"16","hora":"17:00","auditorio":"DS","nome":"Carles Santana","titulo":"Hides fotográficos"},{"dia":"16","hora":"09:00","auditorio":"Avistar","nome":"Tietta Pivatto","titulo":"Observação de aves e Atenção Plena - Saúde Mental"},{"dia":"16","hora":"10:00","auditorio":"Avistar","nome":"Fábio Barata e convidados","titulo":"Mesa redonda Comedouros"},{"dia":"16","hora":"13:30","auditorio":"Avistar","nome":"João Paulo Krajewski","titulo":"Floresta Das Águas: 10 anos documentando a Amazônia selvagem"},{"dia":"16","hora":"14:00","auditorio":"Avistar","nome":"Rodrigo Agostinho","titulo":"Status de conservação das aves brasileiras"},{"dia":"16","hora":"14:30","auditorio":"Avistar","nome":"Fábio Olmos","titulo":"Escolha sete espécies em sete Mil"},{"dia":"16","hora":"15:00","auditorio":"Avistar","nome":"William Menq","titulo":"Corujas: o que ainda não sabemos?"},{"dia":"16","hora":"16:00","auditorio":"Avistar","nome":"Silvia F. Linhares","titulo":"15 anos - 150 guias - Uma grande homenagem!"},{"dia":"16","hora":"16:30","auditorio":"Avistar","nome":"Caro Yáñez","titulo":"Alto Mar, Altas Aves - Pelágicas en Chile"},{"dia":"16","hora":"17:00","auditorio":"Avistar","nome":"Caio Brito","titulo":"Ser Guia: Isso Não É Sobre Mim"},{"dia":"16","hora":"17:30","auditorio":"Avistar","nome":"Zoomundo","titulo":"Aves gigantes do passado e do presente"},{"dia":"17","hora":"09:00","auditorio":"C1","nome":"Diário da Natureza","titulo":"Diário da Natureza na Aprendizagem, Pesquisa e EA"},{"dia":"17","hora":"09:30","auditorio":"C1","nome":"Thiago Vernaschi","titulo":"Campi universitários como espaços de birding"},{"dia":"17","hora":"10:00","auditorio":"C1","nome":"Silvia Nishida","titulo":"Aves e a conexão da Escola com a Natureza"},{"dia":"17","hora":"10:30","auditorio":"C1","nome":"Karlla Barbosa","titulo":"Ciência em voo: além da academia"},{"dia":"17","hora":"11:00","auditorio":"C1","nome":"Juliana Vitório","titulo":"Rede SAVE: Ciência cidadã e monitoramento"},{"dia":"17","hora":"11:30","auditorio":"C1","nome":"Luccas Longo","titulo":"A Natureza Cidadã Paulista"},{"dia":"17","hora":"13:00","auditorio":"C1","nome":"Eduardo Alexandrino","titulo":"Seja responsável! 5 tarefas ao usar comedouros"},{"dia":"17","hora":"13:30","auditorio":"C1","nome":"Luiz Fernando","titulo":"Nomes vernáculos das aves brasileiras"},{"dia":"17","hora":"14:00","auditorio":"C1","nome":"Vini Carvalho","titulo":"Comunidade LGBTQIAPN+ no Meio Ornitológico."},{"dia":"17","hora":"14:30","auditorio":"C1","nome":"Vitoria C. Gozzo","titulo":"Conservação em Rede: Aves Ameaçadas"},{"dia":"17","hora":"15:00","auditorio":"C1","nome":"Christine Prisco","titulo":"Manejo e Medicina de Beija-Flores"},{"dia":"17","hora":"15:30","auditorio":"C1","nome":"Natália","titulo":"Como as aves são por dentro?"},{"dia":"17","hora":"16:00","auditorio":"C1","nome":"Marcos Santos","titulo":"Sounds Good! - Serenata da Mãe Natureza"},{"dia":"17","hora":"16:30","auditorio":"C1","nome":"Larissa P. Sarno","titulo":"Pertencer para conservar o mico-leão-preto"},{"dia":"17","hora":"09:00","auditorio":"C2","nome":"Joanna Pimentel","titulo":"Livro Passarinhando"},{"dia":"17","hora":"09:15","auditorio":"C2","nome":"Elizabeth Smith","titulo":"Birding English sem fronteiras"},{"dia":"17","hora":"09:30","auditorio":"C2","nome":"Vinícius São Pedro","titulo":"Ciências Naturais para crianças"},{"dia":"17","hora":"09:45","auditorio":"C2","nome":"Lorrane Coelho","titulo":"Infância na natureza: estímulo e vivência"},{"dia":"17","hora":"10:00","auditorio":"C2","nome":"Talita","titulo":"Experiencias e obstáculos na reabilitação de aves"},{"dia":"17","hora":"10:15","auditorio":"C2","nome":"Isabella Facin","titulo":"Avaliando Métodos de Eventos Educativos"},{"dia":"17","hora":"10:30","auditorio":"C2","nome":"Roberta Guimarães","titulo":"O Incrível Mundo das Aves - Projeto"},{"dia":"17","hora":"10:45","auditorio":"C2","nome":"IVANIA","titulo":"Manual de desimportâncias"},{"dia":"17","hora":"11:00","auditorio":"C2","nome":"Ana Paula Siqueira","titulo":"Aves na Educação Ambiental Escolar"},{"dia":"17","hora":"11:15","auditorio":"C2","nome":"Luccas Longo","titulo":"Pokémons - as cartas da natureza do Brasil"},{"dia":"17","hora":"11:30","auditorio":"C2","nome":"Felipe Simões","titulo":"Ficharium: o app para estudos ambientais"},{"dia":"17","hora":"11:45","auditorio":"C2","nome":"Rodolfo Eller Viana","titulo":"Novos meios de observar e registrar aves e a IA"},{"dia":"17","hora":"13:00","auditorio":"C2","nome":"Alexandre Franchin","titulo":"Consumo de frutos por aves na UFSCar"},{"dia":"17","hora":"13:15","auditorio":"C2","nome":"Pedro Cristales","titulo":"Uma década de passarinhadas no Parque Ibirapuera"},{"dia":"17","hora":"13:30","auditorio":"C2","nome":"Taynara Bessi","titulo":"Desafios da observação de aves em UCs"},{"dia":"17","hora":"13:45","auditorio":"C2","nome":"Jonas","titulo":"Você conhece as Aves de Arealva?"},{"dia":"17","hora":"14:00","auditorio":"C2","nome":"Renato Teixeira","titulo":"Florestan Passarinhando"},{"dia":"17","hora":"14:15","auditorio":"C2","nome":"Marcio Pereira","titulo":"São José como você nunca viu"},{"dia":"17","hora":"14:30","auditorio":"C2","nome":"Arthur M. Rosa","titulo":"As Asas do Campus"},{"dia":"17","hora":"14:45","auditorio":"C2","nome":"Dante Perseu Costa Thomassim","titulo":"Asas do Litoral"},{"dia":"17","hora":"15:00","auditorio":"C2","nome":"Tio Max","titulo":"S.SEBASTIÃO Ecoturismo e Ed. Ambiental Através da Observação de Ave"},{"dia":"17","hora":"15:15","auditorio":"C2","nome":"Anna Luiza","titulo":"Ponte dossel: Mico-leão-preto na Lagoa do Sino"},{"dia":"17","hora":"15:30","auditorio":"C2","nome":"Caroline Cotrim","titulo":"Caixa da Biodiversidade e a fauna de São Paulo"},{"dia":"17","hora":"15:45","auditorio":"C2","nome":"Gabriel Carvalho","titulo":"Apresentação da Rede de Observadores da Natureza"},{"dia":"17","hora":"16:00","auditorio":"C2","nome":"Gisiane Rodrigues lima","titulo":"A arte da pele"},{"dia":"17","hora":"16:15","auditorio":"C2","nome":"Maria Mello","titulo":"O incrível mundo das Sementes Nativas"},{"dia":"17","hora":"16:30","auditorio":"C2","nome":"Lucas Lima","titulo":"Enriquecimento ambiental para serpentes"},{"dia":"17","hora":"16:45","auditorio":"C2","nome":"Samuel Marques","titulo":"Enriquecimento ambiental para aves"},{"dia":"17","hora":"17:00","auditorio":"C2","nome":"Sandro Faria","titulo":"Inventários de fauna e uso na gestão"},{"dia":"17","hora":"14:00","auditorio":"Obs","nome":"João Paulo Krajewski","titulo":"Fotografando e filmando aves: 10 dicas essenciais"},{"dia":"17","hora":"14:30","auditorio":"Obs","nome":"Carlos Amaral","titulo":"Observatório Ornitológico: berço do rio Iguaçu"},{"dia":"17","hora":"15:00","auditorio":"Obs","nome":"Marcio Moreira","titulo":"JARDINEIROS"},{"dia":"17","hora":"15:45","auditorio":"Obs","nome":"Tück","titulo":"Mochilão CentroAmérica Em busca das Aves Símbolos"},{"dia":"17","hora":"16:00","auditorio":"Obs","nome":"Matheus M. Santos","titulo":"#VemPassarinhar com o Museu Biológico"},{"dia":"17","hora":"16:15","auditorio":"Obs","nome":"Maíra Ferreira","titulo":"Nós, os saguis e o urbano"},{"dia":"17","hora":"16:30","auditorio":"Obs","nome":"Samira Salgueiro","titulo":"Saúde Única e a conservação das aves"},{"dia":"17","hora":"16:45","auditorio":"Obs","nome":"Rafaela Spalding","titulo":"Loros nos lares do Brasil segundo o iNaturalist"},{"dia":"17","hora":"17:00","auditorio":"Obs","nome":"Núbia Felippe Reis","titulo":"Rotas do Atlântico Sul: aves e conflitos"},{"dia":"17","hora":"09:00","auditorio":"DS","nome":"Jovens Observadores","titulo":"Jovens Seniores - voz da experiência e aprendizado"},{"dia":"17","hora":"09:30","auditorio":"DS","nome":"Jovens Observadores","titulo":"A Observação de Aves como meio de Educação Ambiental crítica"},{"dia":"17","hora":"10:00","auditorio":"DS","nome":"Jovens Observadores","titulo":"Começando na Observação de Aves"},{"dia":"17","hora":"10:30","auditorio":"DS","nome":"Jovens Observadores","titulo":"As Passarinheiras, conhecendo as ornitomeninas."},{"dia":"17","hora":"11:00","auditorio":"DS","nome":"Jovens Observadores","titulo":"Observar e comunicar ciência"},{"dia":"17","hora":"11:30","auditorio":"DS","nome":"Jovens Observadores","titulo":"Videos dos Jovens Observadores de Aves"},{"dia":"17","hora":"13:00","auditorio":"DS","nome":"Instituto Arara Azul","titulo":"Como Espécies Emblemáticas Ajudam na Conservação dos Psitacídeos"},{"dia":"17","hora":"13:05","auditorio":"DS","nome":"Kefany Ramalho","titulo":"Resultados e Desafios do Monitoramento da Arara-azul-grande no Sudeste do Pará"},{"dia":"17","hora":"13:25","auditorio":"DS","nome":"Carlynne Simões","titulo":"O que o DNA pode nos contar sobre as araras azuis?"},{"dia":"17","hora":"13:45","auditorio":"DS","nome":"Fernanda Fontoura","titulo":"Quantas araras azuis existem na natureza? O Primeiro BIG DAY das araras azuis em 2025"},{"dia":"17","hora":"14:05","auditorio":"DS","nome":"Erica Pacífico","titulo":"O Instituto Arara Azul como referência para pesquisa de longo prazo"},{"dia":"17","hora":"14:25","auditorio":"DS","nome":"Silvia Nery Godoy","titulo":"Plano de Manejo Populacional das araras azuis"},{"dia":"17","hora":"14:45","auditorio":"DS","nome":"Elisiane Mascarenhas","titulo":"Educação ambiental no Instituto Arara Azul"},{"dia":"17","hora":"15:05","auditorio":"DS","nome":"Maristela Benites","titulo":"Educação Ambiental e a arara-azul na Amazônia"},{"dia":"17","hora":"16:30","auditorio":"DS","nome":"Victor V","titulo":"Censo e monitoramento de Saíra-apunhalada"},{"dia":"17","hora":"16:45","auditorio":"DS","nome":"Valdívia Rocha","titulo":"Saíra-apunhalada em Vargem Alta"},{"dia":"17","hora":"17:00","auditorio":"DS","nome":"Vinícius Freitas","titulo":"ANÁLISE DO PÓLEN DE AMBIENTE URBANO"},{"dia":"15","hora":"09:30","auditorio":"TOVS","nome":"Assoc. Nacional TOVS","titulo":"Diretores Regionais e Estaduais"},{"dia":"15","hora":"10:30","auditorio":"TOVS","nome":"ICMBio","titulo":"Programa Natureza com as Pessoas"},{"dia":"15","hora":"11:00","auditorio":"TOVS","nome":"MTur","titulo":"Ações MTur para TOVS no Brasil"},{"dia":"15","hora":"11:40","auditorio":"TOVS","nome":"Arthur Bispo","titulo":"Óia Passarinhar em Goiás"},{"dia":"15","hora":"13:40","auditorio":"TOVS","nome":"Sergio Cipolotti","titulo":"Projeto Baleia Jubarte"},{"dia":"15","hora":"14:30","auditorio":"TOVS","nome":"Gustavo Canale","titulo":"Turismo de Obs de Primatas: Estratégias para a Conservação"},{"dia":"15","hora":"15:30","auditorio":"TOVS","nome":"Guilherme P Tiezzi","titulo":"Biosfera Cantão: Viagem ao Centro do Mundo"},{"dia":"15","hora":"16:00","auditorio":"TOVS","nome":"Lucas Ninno Ometto","titulo":"Cerrado: O poder da imagem na conservação da savana brasileira"},{"dia":"15","hora":"17:00","auditorio":"TOVS","nome":"Marcelo Vitor da Fonseca","titulo":"Sapeadas, Ecoturismo, Conservação e Divulgação Cientifica"},{"dia":"15","hora":"17:30","auditorio":"TOVS","nome":"Adriana Mendes","titulo":"Circuito Serra dos Orgãos e Adjacências"},{"dia":"16","hora":"11:00","auditorio":"TOVS","nome":"Edu Franco","titulo":"Ética e Boas Práticas na Obs de Aves"},{"dia":"16","hora":"13:20","auditorio":"TOVS","nome":"Yasmine de Cezaro","titulo":"Ecoturismo e Estudo dos Animais na Cunhataí Porã"},{"dia":"16","hora":"13:35","auditorio":"TOVS","nome":"Cris Prates","titulo":"ECPTatu Bola: Conservação Participativa e Turismo Científico na Chapada Diamantina"},{"dia":"16","hora":"15:40","auditorio":"TOVS","nome":"Diego Calderon","titulo":"COLOMBIA"},{"dia":"16","hora":"16:10","auditorio":"TOVS","nome":"Maria Cristina Arzolla","titulo":"CHILE: Patagônia Chilena: da paixão a um projeto de vida"},{"dia":"17","hora":"09:10","auditorio":"TOVS","nome":"Cacique Licuri Pataxó","titulo":"Vivências com Indígenas - Parque Nacional e Histórico Monte Pascoal"},{"dia":"17","hora":"10:30","auditorio":"TOVS","nome":"Carlene Gomes","titulo":"Da análise ao roteiro: aviturismo no Araguaia"},{"dia":"17","hora":"11:30","auditorio":"TOVS","nome":"Tietta Pivatto","titulo":"Oportunidades de negócios na observação de aves"},{"dia":"17","hora":"12:00","auditorio":"TOVS","nome":"Lorrane Coelho","titulo":"Captação no Terceiro Setor: Experiência Avistando"},{"dia":"17","hora":"12:15","auditorio":"TOVS","nome":"Sayra Alves","titulo":"Aves do Araguaia: distribuição e habitats."},{"dia":"17","hora":"13:00","auditorio":"TOVS","nome":"Álvaro Machado","titulo":"SUL - Destino RS"},{"dia":"17","hora":"13:45","auditorio":"TOVS","nome":"Fabio Torquato","titulo":"Destino São Paulo para a Observação de Aves"},{"dia":"17","hora":"14:15","auditorio":"TOVS","nome":"Arthur Bispo","titulo":"As Macro Rotas para o aviturismo em Goiás"},{"dia":"17","hora":"15:00","auditorio":"TOVS","nome":"Luciana Gabriela","titulo":"Produtos Turísticos da Bahia"},{"dia":"17","hora":"16:00","auditorio":"TOVS","nome":"Encerramento Fórum TOVS","titulo":""}];
+
+let keywords=[];
+let selected=new Set();
+
+const auditorios=[...new Set(DATA.map(d=>d.auditorio))].sort();
+const audSel=document.getElementById('filter-aud');
+auditorios.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;audSel.appendChild(o);});
+
+document.getElementById('kw-input').addEventListener('keydown',e=>{if(e.key==='Enter')addKeyword();});
+
+function addKeyword(){
+  const v=document.getElementById('kw-input').value.trim().toLowerCase();
+  if(!v||keywords.includes(v))return;
+  keywords.push(v);
+  document.getElementById('kw-input').value='';
+  renderTags();render();
+}
+function removeKeyword(kw){keywords=keywords.filter(k=>k!==kw);renderTags();render();}
+function renderTags(){
+  const area=document.getElementById('tags-area');
+  area.innerHTML='';
+  keywords.forEach(k=>{
+    const t=document.createElement('span');
+    t.className='tag';
+    t.innerHTML=k+' <span class="x" onclick="removeKeyword(\''+k+'\')">✕</span>';
+    area.appendChild(t);
+  });
+}
+function normalize(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function matches(item){
+  if(!keywords.length)return false;
+  const text=normalize(item.titulo+' '+item.nome+' '+item.auditorio);
+  return keywords.some(k=>text.includes(normalize(k)));
+}
+function highlight(text){
+  let out=text;
+  keywords.forEach(k=>{
+    const nk=normalize(k);
+    const re=new RegExp('('+nk.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    out=out.replace(re,'<mark>$1</mark>');
+  });
+  return out;
+}
+function getId(item){return item.dia+'|'+item.hora+'|'+item.auditorio+'|'+item.nome;}
+function hasConflict(item){
+  return[...selected].some(id=>{
+    const p=id.split('|');
+    return p[0]===item.dia&&p[1]===item.hora&&p[3]!==item.nome;
+  });
+}
+function render(){
+  const dia=document.getElementById('filter-dia').value;
+  const aud=document.getElementById('filter-aud').value;
+  let results=DATA.filter(d=>{
+    if(!matches(d))return false;
+    if(dia&&d.dia!==dia)return false;
+    if(aud&&d.auditorio!==aud)return false;
+    return true;
+  });
+  results.sort((a,b)=>a.dia.localeCompare(b.dia)||a.hora.localeCompare(b.hora));
+  document.getElementById('results-count').textContent=results.length+' palestra(s) encontrada(s)';
+  const list=document.getElementById('results-list');
+  if(!keywords.length){list.innerHTML='<div class="empty">Digite uma palavra-chave para buscar sessões</div>';return;}
+  if(!results.length){list.innerHTML='<div class="empty">Nenhuma sessão encontrada</div>';return;}
+  list.innerHTML=results.map(item=>{
+    const id=getId(item);
+    const sel=selected.has(id);
+    const conf=!sel&&hasConflict(item);
+    return`<div class="card${sel?' selected':''}" onclick="toggle('${id.replace(/'/g,"\\'").replace(/\n/g,' ')}')">
+      <div class="card-check">${sel?'✓':''}</div>
+      <div class="card-body">
+        <div class="card-titulo">${highlight(item.titulo)||'—'}${conf?'<span class="conflict">Conflito de horário</span>':''}</div>
+        <div class="card-meta">
+          <span>${highlight(item.nome)||'—'}</span>
+          <span class="badge badge-dia">Dia ${item.dia}</span>
+          <span class="badge badge-hora">${item.hora}</span>
+          <span class="badge badge-aud">${item.auditorio}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggle(id){
+  if(selected.has(id))selected.delete(id);else selected.add(id);
+  render();renderRoteiro();
+}
+function addAll(){
+  const dia=document.getElementById('filter-dia').value;
+  const aud=document.getElementById('filter-aud').value;
+  DATA.filter(d=>{
+    if(!matches(d))return false;
+    if(dia&&d.dia!==dia)return false;
+    if(aud&&d.auditorio!==aud)return false;
+    return true;
+  }).forEach(d=>selected.add(getId(d)));
+  render();renderRoteiro();
+}
+function renderRoteiro(){
+  const items=[...selected].map(id=>{
+    const parts=id.split('|');
+    const dia=parts[0],hora=parts[1],auditorio=parts[2],nome=parts.slice(3).join('|');
+    return DATA.find(d=>d.dia===dia&&d.hora===hora&&d.auditorio===auditorio&&d.nome===nome);
+  }).filter(Boolean);
+  items.sort((a,b)=>a.dia.localeCompare(b.dia)||a.hora.localeCompare(b.hora));
+  document.getElementById('roteiro-count').textContent=items.length+' sessão(ões)';
+  const byDay={'15':[],'16':[],'17':[]};
+  items.forEach(i=>{if(byDay[i.dia])byDay[i.dia].push(i);});
+  const dayLabels={'15':'Dia 15','16':'Dia 16','17':'Dia 17'};
+  let html='';
+  if(!items.length){html='<div class="empty">Nenhuma sessão adicionada ainda</div>';}
+  else{
+    ['15','16','17'].forEach(d=>{
+      if(!byDay[d].length)return;
+      let conflicts={};
+      byDay[d].forEach(i=>{if(!conflicts[i.hora])conflicts[i.hora]=[];conflicts[i.hora].push(i);});
+      html+=`<div class="roteiro-day"><div class="roteiro-day-label">${dayLabels[d]}</div>`;
+      byDay[d].forEach(i=>{
+        const hasC=conflicts[i.hora].length>1;
+        html+=`<div class="roteiro-item">
+          <div class="roteiro-time">${i.hora}</div>
+          <div class="roteiro-info">
+            <div class="t">${i.titulo||'—'}${hasC?'<span class="conflict">Conflito</span>':''}</div>
+            <div class="s">${i.nome||'—'} · ${i.auditorio}</div>
+          </div>
+        </div>`;
+      });
+      html+='</div>';
+    });
+  }
+  document.getElementById('roteiro-list').innerHTML=html;
+}
+function exportRoteiro(){
+  const items=[...selected].map(id=>{
+    const parts=id.split('|');
+    const dia=parts[0],hora=parts[1],auditorio=parts[2],nome=parts.slice(3).join('|');
+    return DATA.find(d=>d.dia===dia&&d.hora===hora&&d.auditorio===auditorio&&d.nome===nome);
+  }).filter(Boolean);
+  items.sort((a,b)=>a.dia.localeCompare(b.dia)||a.hora.localeCompare(b.hora));
+  if(!items.length){alert('Adicione sessões ao roteiro primeiro.');return;}
+  let txt='MEU ROTEIRO — AVISTAR\n'+'='.repeat(40)+'\n\n';
+  let day='';
+  items.forEach(i=>{
+    if(i.dia!==day){day=i.dia;txt+=`DIA ${day}\n${'-'.repeat(30)}\n`;}
+    txt+=`${i.hora} | ${i.auditorio}\n${i.titulo}\n${i.nome}\n\n`;
+  });
+  const b=document.createElement('a');
+  b.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);
+  b.download='meu_roteiro_avistar.txt';
+  b.click();
+}
+render();renderRoteiro();
+</script>
+</body>
+</html>
